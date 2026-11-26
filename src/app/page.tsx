@@ -1,5 +1,5 @@
-import { RepoPrompt } from "@/components/RepoPrompt";
-import { TerminalWindow } from "@/components/TerminalWindow";
+import { RepoPrompt } from "@/app/components/RepoPrompt";
+import { TerminalWindow } from "@/app/components/TerminalWindow";
 
 export default function Home() {
   return (

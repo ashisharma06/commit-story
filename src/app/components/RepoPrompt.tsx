@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Prompt } from "@/components/Prompt";
+import { Prompt } from "@/app/components/Prompt";
 import { parseRepoInput } from "@/lib/repo";
 
 const EXAMPLES = ["vercel/next.js", "facebook/react", "vercel/ai"] as const;
@@ -33,7 +33,7 @@ export function RepoPrompt() {
     <div>
       <Prompt
         value={value}
-        onChange={(nextValue) => {
+        onChange={(nextValue: string) => {
           setValue(nextValue);
           setError(null);
         }}

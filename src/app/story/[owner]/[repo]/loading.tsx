@@ -1,4 +1,4 @@
-import { TerminalWindow } from "@/components/TerminalWindow";
+import { TerminalWindow } from "@/app/components/TerminalWindow";
 
 export default function Loading() {
   return (

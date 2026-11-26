@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { TerminalWindow } from "@/components/TerminalWindow";
+import { TerminalWindow } from "@/app/components/TerminalWindow";
 import { analyzeRepo, formatInsights } from "@/lib/analyze";
 import {
   fetchRepoStoryData,
