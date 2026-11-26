@@ -10,6 +10,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   reposGet: vi.fn(),
+  getCommit: vi.fn(),
   listCommits: vi.fn(),
   pullsList: vi.fn(),
   listContributors: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock("@octokit/rest", () => ({
     rest = {
       repos: {
         get: mocks.reposGet,
+        getCommit: mocks.getCommit,
         listCommits: mocks.listCommits,
         listContributors: mocks.listContributors,
         listLanguages: mocks.listLanguages,
@@ -146,14 +148,20 @@ describe("GitHub data layer", () => {
     }
   });
 
-  it("paginates commits but stops at the requested cap", async () => {
+  it("paginates commits, stops at the cap, and attaches file counts", async () => {
     mocks.paginateIterator.mockReturnValue(
       pageOf([commit("aaa1111"), commit("bbb2222"), commit("ccc3333")]),
+    );
+    mocks.getCommit.mockImplementation(
+      async ({ ref }: { ref: string }) => ({
+        data: { stats: { total: ref === "aaa1111" ? 12 : 4 } },
+      }),
     );
 
     const commits = await fetchCommits("octocat", "Hello-World", 2);
 
     expect(commits.map((entry) => entry.sha)).toEqual(["aaa1111", "bbb2222"]);
+    expect(commits[0]?.filesChanged).toBe(12);
     expect(mocks.paginateIterator).toHaveBeenCalledWith(mocks.listCommits, {
       owner: "octocat",
       repo: "Hello-World",

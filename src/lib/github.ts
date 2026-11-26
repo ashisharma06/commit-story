@@ -5,6 +5,8 @@ import { parseRepoInput } from "@/lib/repo";
 const MAX_COMMITS = 1000;
 const MAX_PULL_REQUESTS = 500;
 const MAX_CONTRIBUTORS = 100;
+const MAX_COMMIT_DETAILS = 100;
+const DETAIL_CONCURRENCY = 10;
 const PER_PAGE = 100;
 
 export class RepoNotFoundError extends Error {
@@ -207,6 +209,13 @@ const commitSchema = z
     }),
     author: z.object({ login: z.string() }).nullable(),
     parents: z.array(z.object({ sha: z.string() })),
+    stats: z
+      .object({ total: z.number().int().nonnegative() })
+      .nullable()
+      .optional(),
+    files: z
+      .array(z.object({ changes: z.number().int().nonnegative() }))
+      .optional(),
   })
   .transform((data) => ({
     sha: data.sha,
@@ -216,7 +225,19 @@ const commitSchema = z
     authorName: data.commit.author?.name ?? "unknown",
     authorLogin: data.author?.login ?? null,
     isMerge: data.parents.length > 1,
+    filesChanged:
+      data.stats?.total ??
+      data.files?.reduce((sum, file) => sum + file.changes, 0),
   }));
+
+const commitDetailSchema = z
+  .object({
+    stats: z
+      .object({ total: z.number().int().nonnegative() })
+      .nullable()
+      .optional(),
+  })
+  .transform((data) => data.stats?.total);
 
 const pullRequestSchema = z
   .object({
@@ -278,6 +299,45 @@ function perPage(cap: number): number {
   return Math.min(Math.max(Math.floor(cap), 1), PER_PAGE);
 }
 
+async function mergeCommitDetails(
+  client: Octokit,
+  owner: string,
+  repo: string,
+  commits: CommitSummary[],
+): Promise<CommitSummary[]> {
+  const candidates = commits.slice(0, MAX_COMMIT_DETAILS);
+  const details = new Map<string, number>();
+
+  for (let index = 0; index < candidates.length; index += DETAIL_CONCURRENCY) {
+    const batch = candidates.slice(index, index + DETAIL_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (commit) => {
+        try {
+          const { data } = await client.rest.repos.getCommit({
+            owner,
+            repo,
+            ref: commit.sha,
+          });
+          return { sha: commit.sha, filesChanged: commitDetailSchema.parse(data) };
+        } catch {
+          return { sha: commit.sha, filesChanged: undefined };
+        }
+      }),
+    );
+
+    for (const result of results) {
+      if (result.filesChanged !== undefined) {
+        details.set(result.sha, result.filesChanged);
+      }
+    }
+  }
+
+  return commits.map((commit) => ({
+    ...commit,
+    filesChanged: details.get(commit.sha) ?? commit.filesChanged,
+  }));
+}
+
 export async function fetchRepoMetadata(
   owner: string,
   repo: string,
@@ -305,11 +365,12 @@ export async function fetchCommits(
     repo,
     per_page: perPage(limit),
   });
-  return request(
+  const commits = await request(
     () => collect(pages, limit, (item) => commitSchema.parse(item)),
     owner,
     repo,
   );
+  return mergeCommitDetails(client, owner, repo, commits);
 }
 
 export async function fetchMergedPullRequests(

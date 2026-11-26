@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { TerminalWindow } from "@/components/TerminalWindow";
+import { analyzeRepo, formatInsights } from "@/lib/analyze";
 import {
   fetchRepoStoryData,
   RateLimitError,
@@ -99,6 +100,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
   }
 
   const data = result.data;
+  const insights = analyzeRepo(data.commits, data.pullRequests);
 
   return (
     <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
@@ -165,6 +167,15 @@ export default async function StoryPage({ params }: StoryPageProps) {
               ))}
             </ul>
           )}
+        </div>
+
+        <div className="mt-8 border-t border-border pt-6">
+          <p className="mb-3 text-xs tracking-[0.18em] text-muted uppercase">
+            {"// INSIGHTS (debug)"}
+          </p>
+          <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-muted">
+            {formatInsights(insights)}
+          </pre>
         </div>
 
         <div className="mt-8 border-t border-border pt-6 text-sm leading-7">
