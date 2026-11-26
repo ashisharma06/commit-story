@@ -6,6 +6,7 @@ import { AsciiBar } from "@/components/AsciiBar";
 import { BootLines, BootSequence } from "@/components/BootSequence";
 import { StoryNarrative } from "@/components/StoryNarrative";
 import { StoryPrompt } from "@/components/StoryPrompt";
+import { StoryVisuals } from "@/components/StoryVisuals";
 import { analyzeRepo } from "@/lib/analyze";
 import { parseRepoInput } from "@/lib/repo";
 import {
@@ -169,15 +170,29 @@ async function RepoSummary({ promise }: { promise: Promise<RepoSummaryData> }) {
   return <RepoSummaryContent data={result.value} />;
 }
 
-async function StoryHistory({ promise }: { promise: Promise<RepoHistoryData> }) {
+async function StoryHistory({
+  promise,
+  owner,
+  repo,
+}: {
+  promise: Promise<RepoHistoryData>;
+  owner: string;
+  repo: string;
+}) {
   const result = await settle(promise);
   if (!result.ok) {
     return <SectionError label="// history" error={result.error} />;
   }
+
   return (
-    <StoryNarrative
-      insights={analyzeRepo(result.value.commits, result.value.pullRequests)}
-    />
+    <>
+      <StoryVisuals
+        insights={analyzeRepo(result.value.commits, result.value.pullRequests)}
+      />
+      <div className="mt-10 border-t border-border pt-6">
+        <StoryNarrative owner={owner} repo={repo} />
+      </div>
+    </>
   );
 }
 
@@ -223,7 +238,11 @@ async function StoryRoute({ params }: StoryPageProps) {
 
       <div className="mt-8 border-t border-border pt-6">
         <Suspense fallback={<BootLines stage="history" />}>
-          <StoryHistory promise={historyPromise} />
+          <StoryHistory
+            promise={historyPromise}
+            owner={parsed.owner}
+            repo={parsed.repo}
+          />
         </Suspense>
       </div>
 

@@ -1,128 +1,139 @@
-import { ActivityHeatmap } from "@/components/ActivityHeatmap";
-import { AsciiBar } from "@/components/AsciiBar";
-import { Chapter } from "@/components/Chapter";
-import { CommitsOverTime } from "@/components/CommitsOverTime";
-import { GitGraph } from "@/components/GitGraph";
-import { StoryKeyboard } from "@/components/StoryKeyboard";
-import type { Era, MilestoneCommit, RepoInsights } from "@/lib/analyze";
+"use client";
 
-function inEra(date: string, era: Era): boolean {
-  const time = Date.parse(date);
-  if (!Number.isFinite(time)) return false;
-  const start = era.start ? Date.parse(era.start) : Number.NaN;
-  const end = era.end ? Date.parse(era.end) : Number.NaN;
-  if (Number.isFinite(start) && time < start) return false;
-  if (Number.isFinite(end) && time > end) return false;
-  return true;
+import { useEffect, useState } from "react";
+import { TypeWriter } from "@/components/TypeWriter";
+
+type StoryNarrativeProps = {
+  owner: string;
+  repo: string;
+};
+
+type StoryStatus = "loading" | "streaming" | "done" | "error";
+
+function readError(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const record = payload as Record<string, unknown>;
+  return typeof record.error === "string" ? record.error : null;
 }
 
-function ChapterOutput({
-  milestones,
-}: {
-  milestones: readonly MilestoneCommit[];
-}) {
-  if (milestones.length === 0) {
-    return <p className="text-xs text-muted">no commits recorded</p>;
-  }
+function NarrativeRun({
+  owner,
+  repo,
+  onRetry,
+}: StoryNarrativeProps & { onRetry: () => void }) {
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState<StoryStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/story", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owner, repo }),
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+
+        if (!response.ok) {
+          const payload: unknown = await response.json().catch(() => null);
+          throw new Error(
+            readError(payload) ?? `narration failed (${response.status})`,
+          );
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("narration stream unavailable");
+
+        const decoder = new TextDecoder();
+        setStatus("streaming");
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (controller.signal.aborted) {
+            await reader.cancel().catch(() => undefined);
+            return;
+          }
+          if (done) break;
+          if (value && value.byteLength > 0) {
+            const chunk = decoder.decode(value, { stream: true });
+            setText((current) => current + chunk);
+          }
+        }
+
+        if (controller.signal.aborted) return;
+        setText((current) => current + decoder.decode());
+        setStatus("done");
+      } catch (cause) {
+        if (controller.signal.aborted) return;
+        setError(
+          cause instanceof Error ? cause.message : "narration stream failed",
+        );
+        setStatus("error");
+      }
+    })();
+
+    return () => controller.abort();
+  }, [owner, repo]);
+
+  const waiting =
+    status === "loading" || (status === "streaming" && text.length === 0);
 
   return (
-    <ul className="space-y-1 text-xs leading-6">
-      {milestones.map((commit) => (
-        <li key={commit.sha} className="flex gap-3">
-          <span className="shrink-0 text-warning">
-            {commit.sha.slice(0, 7)}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-text">
-            {commit.message}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      {waiting ? (
+        <p aria-live="polite" className="mt-6 text-sm text-warning">
+          generating story...
+          <span aria-hidden="true" className="terminal-cursor" />
+        </p>
+      ) : null}
+
+      {text.length > 0 ? (
+        <div className="mt-6">
+          <TypeWriter text={text} />
+        </div>
+      ) : null}
+
+      {status === "done" && text.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">no narrative returned</p>
+      ) : null}
+
+      {status === "error" ? (
+        <div className="mt-6" role="alert">
+          <p className="text-sm text-error">error: {error}</p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-3 text-sm text-link hover:underline"
+          >
+            $ retry
+          </button>
+        </div>
+      ) : null}
+    </>
   );
 }
 
-export function StoryNarrative({ insights }: { insights: RepoInsights }) {
-  const leaderboard = insights.contributorLeaderboard.slice(0, 5);
-  const maxCommits = leaderboard[0]?.commits ?? 0;
+export function StoryNarrative({ owner, repo }: StoryNarrativeProps) {
+  const [attempt, setAttempt] = useState(0);
 
   return (
-    <StoryKeyboard chapterCount={insights.eras.length}>
-      <div className="space-y-10">
-        <div className="space-y-8">
-          <ActivityHeatmap
-            days={insights.activityByDay}
-            lastActivityAt={insights.lastCommitAt}
-          />
-          <CommitsOverTime weeks={insights.commitsPerWeek} />
-
-          <div>
-            <p className="mb-4 text-xs tracking-[0.18em] text-muted uppercase">
-              {"// contributor leaderboard"}
-            </p>
-            {leaderboard.length === 0 ? (
-              <p className="text-sm text-muted">no contributors recorded</p>
-            ) : (
-              <div className="space-y-2">
-                {leaderboard.map((entry) => (
-                  <AsciiBar
-                    key={entry.login}
-                    label={entry.login}
-                    value={entry.commits}
-                    max={maxCommits}
-                    width={10}
-                    detail={`${entry.commits} · ${Math.round(entry.share * 100)}%`}
-                    percent={Math.round(entry.share * 100)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
-            <div>
-              <dt className="text-xs text-muted">busiest day</dt>
-              <dd className="mt-1 text-accent">
-                {insights.busiestDayOfWeek?.label ?? "n/a"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted">busiest hour</dt>
-              <dd className="mt-1 text-accent">
-                {insights.busiestHour?.label ?? "n/a"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted">longest streak</dt>
-              <dd className="mt-1 text-accent">
-                {insights.longestCommitStreakDays === null
-                  ? "n/a"
-                  : `${insights.longestCommitStreakDays} days`}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted">milestones</dt>
-              <dd className="mt-1 text-accent">{insights.milestones.length}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <GitGraph commits={insights.milestones} />
-
-        <div className="space-y-8">
-          <p className="text-xs tracking-[0.18em] text-muted uppercase">
-            {"// chapters"}
-          </p>
-          {insights.eras.map((era, index) => (
-            <Chapter key={era.index} era={era} index={index + 1}>
-              <ChapterOutput
-                milestones={insights.milestones.filter((commit) =>
-                  inEra(commit.date, era),
-                )}
-              />
-            </Chapter>
-          ))}
-        </div>
-      </div>
-    </StoryKeyboard>
+    <section aria-label={`AI narrative for ${owner}/${repo}`}>
+      <p className="text-sm">
+        <span aria-hidden="true" className="accent-glow text-accent">
+          $
+        </span>{" "}
+        commit-story narrate {owner}/{repo}
+      </p>
+      <NarrativeRun
+        key={`${owner}/${repo}:${attempt}`}
+        owner={owner}
+        repo={repo}
+        onRetry={() => setAttempt((current) => current + 1)}
+      />
+    </section>
   );
 }
