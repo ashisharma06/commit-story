@@ -98,6 +98,18 @@ function toError(
   return error instanceof Error ? error : new Error(info.message ?? "GitHub API error.");
 }
 
+const EXPECTED_ERROR_LOG = / - (?:403|404|429) with /;
+
+const githubLogger = {
+  debug: () => undefined,
+  info: () => undefined,
+  warn: (message: string) => console.warn(message),
+  error: (message: string) => {
+    if (EXPECTED_ERROR_LOG.test(message)) return;
+    console.error(message);
+  },
+};
+
 let cachedClient: { token: string | undefined; client: Octokit } | undefined;
 
 function getClient(): Octokit {
@@ -105,7 +117,11 @@ function getClient(): Octokit {
   if (!cachedClient || cachedClient.token !== token) {
     cachedClient = {
       token,
-      client: new Octokit({ auth: token, userAgent: "commit-story" }),
+      client: new Octokit({
+        auth: token,
+        userAgent: "commit-story",
+        log: githubLogger,
+      }),
     };
   }
   return cachedClient.client;

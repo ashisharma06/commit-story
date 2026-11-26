@@ -15,10 +15,15 @@ const mocks = vi.hoisted(() => ({
   listContributors: vi.fn(),
   listLanguages: vi.fn(),
   paginateIterator: vi.fn(),
+  octokitOptions: [] as unknown[],
 }));
 
 vi.mock("@octokit/rest", () => ({
   Octokit: class {
+    constructor(options: unknown) {
+      mocks.octokitOptions.push(options);
+    }
+
     rest = {
       repos: {
         get: mocks.reposGet,
@@ -185,5 +190,27 @@ describe("GitHub data layer", () => {
     mocks.listLanguages.mockResolvedValue({ data: { TypeScript: -1 } });
 
     await expect(fetchLanguages("octocat", "Hello-World")).rejects.toThrow();
+  });
+
+  it("silences expected GitHub error logs but keeps unexpected ones", () => {
+    type OptionsWithLog = { log?: { error: (message: string) => unknown } };
+    const options = mocks.octokitOptions.at(-1) as OptionsWithLog | undefined;
+    const log = options?.log;
+    if (!log) throw new Error("Octokit logger was not configured");
+
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    try {
+      log.error("GET /repos/octocat/missing - 404 with id ABC in 1ms");
+      log.error("GET /repos/octocat/limited - 403 with id ABC in 1ms");
+      expect(consoleError).not.toHaveBeenCalled();
+
+      log.error("GET /repos/octocat/boom - 500 with id ABC in 1ms");
+      expect(consoleError).toHaveBeenCalledOnce();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
