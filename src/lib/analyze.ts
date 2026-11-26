@@ -28,6 +28,14 @@ export type BiggestCommit = {
   date: string;
   filesChanged: number;
 };
+export type ActivityDay = { date: string; commits: number };
+export type MilestoneCommit = {
+  sha: string;
+  message: string;
+  date: string;
+  isMerge: boolean;
+  filesChanged: number;
+};
 export type Era = {
   index: number;
   start: string | null;
@@ -48,6 +56,8 @@ export type RepoInsights = {
   contributorLeaderboard: ContributorStat[];
   longestCommitStreakDays: number | null;
   biggestCommits: BiggestCommit[];
+  milestones: MilestoneCommit[];
+  activityByDay: ActivityDay[];
   eras: Era[];
 };
 
@@ -200,6 +210,54 @@ export function biggestCommits(
     .slice(0, Math.max(0, Math.min(limit, MAX_BIGGEST_COMMITS)));
 }
 
+export function activityByDay(commits: readonly CommitSummary[]): ActivityDay[] {
+  const counts = new Map<string, number>();
+  for (const { time } of datedCommits(commits)) {
+    const key = new Date(time).toISOString().slice(0, 10);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, count]) => ({ date, commits: count }));
+}
+
+export function milestoneCommits(
+  commits: readonly CommitSummary[],
+  limit = 12,
+): MilestoneCommit[] {
+  const dated = datedCommits(commits);
+  if (dated.length === 0) return [];
+
+  const cap = Math.max(1, Math.min(Math.floor(limit), 12));
+  const times = new Map(dated.map(({ commit, time }) => [commit.sha, time]));
+  const bySha = new Map(dated.map(({ commit }) => [commit.sha, commit]));
+  const selected: CommitSummary[] = [];
+  const add = (commit: CommitSummary | undefined) => {
+    if (commit && !selected.some((item) => item.sha === commit.sha)) {
+      selected.push(commit);
+    }
+  };
+
+  add(dated[0]?.commit);
+  for (const { commit } of dated) {
+    if (commit.isMerge) add(commit);
+  }
+  for (const entry of biggestCommits(commits, cap)) {
+    add(bySha.get(entry.sha));
+  }
+
+  return selected
+    .sort((a, b) => (times.get(a.sha) ?? 0) - (times.get(b.sha) ?? 0))
+    .slice(0, cap)
+    .map((commit) => ({
+      sha: commit.sha,
+      message: commit.message.split("\n")[0] ?? commit.message,
+      date: commit.date,
+      isMerge: commit.isMerge,
+      filesChanged: commit.filesChanged ?? 0,
+    }));
+}
+
 function targetEraCount(commitCount: number): number {
   if (commitCount <= 4) return 1;
   if (commitCount <= 14) return 2;
@@ -345,6 +403,8 @@ export function analyzeRepo(
     contributorLeaderboard: contributorLeaderboard(commits),
     longestCommitStreakDays: thin ? null : longestCommitStreak(commits),
     biggestCommits: thin ? [] : biggestCommits(commits),
+    milestones: milestoneCommits(commits),
+    activityByDay: activityByDay(commits),
     eras: splitEras(commits),
   };
 }

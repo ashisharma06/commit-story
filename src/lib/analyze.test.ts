@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CommitSummary, MergedPullRequest } from "@/lib/github";
 import {
+  activityByDay,
   analyzeRepo,
   biggestCommits,
   busiestDayOfWeek,
@@ -9,6 +10,7 @@ import {
   contributorLeaderboard,
   formatInsights,
   longestCommitStreak,
+  milestoneCommits,
   splitEras,
 } from "@/lib/analyze";
 
@@ -62,6 +64,8 @@ describe("analyzeRepo", () => {
     expect(insights.busiestHour).toBeNull();
     expect(insights.longestCommitStreakDays).toBeNull();
     expect(insights.biggestCommits).toEqual([]);
+    expect(insights.milestones).toEqual([]);
+    expect(insights.activityByDay).toEqual([]);
     expect(insights.commitsPerWeek).toEqual([]);
     expect(insights.contributorLeaderboard).toEqual([]);
     expect(formatInsights(insights)).toContain("n/a");
@@ -90,6 +94,18 @@ describe("analyzeRepo", () => {
     expect(insights.busiestHour).toBeNull();
     expect(insights.longestCommitStreakDays).toBeNull();
     expect(insights.biggestCommits).toEqual([]);
+    expect(insights.milestones).toEqual([
+      {
+        sha: "a111111",
+        message: "commit a111111",
+        date: only.date,
+        isMerge: false,
+        filesChanged: 5,
+      },
+    ]);
+    expect(insights.activityByDay).toEqual([
+      { date: "2024-01-01", commits: 1 },
+    ]);
     expect(insights.contributorLeaderboard).toEqual([
       { login: "alice", commits: 1, share: 1 },
     ]);
@@ -161,6 +177,28 @@ describe("analyzeRepo", () => {
       "large",
       "medium",
       "small",
+    ]);
+  });
+
+  it("keeps merge commits as milestones and counts activity per day", () => {
+    const merge = {
+      ...commit({ sha: "merge", date: "2023-02-01T09:00:00Z", filesChanged: 2 }),
+      isMerge: true,
+    };
+    const commits = [
+      commit({ sha: "first", date: "2023-01-01T09:00:00Z", filesChanged: 4 }),
+      merge,
+      commit({ sha: "next", date: "2023-02-01T10:00:00Z", filesChanged: 12 }),
+    ];
+
+    expect(milestoneCommits(commits).map((entry) => entry.sha)).toEqual([
+      "first",
+      "merge",
+      "next",
+    ]);
+    expect(activityByDay(commits)).toEqual([
+      { date: "2023-01-01", commits: 1 },
+      { date: "2023-02-01", commits: 2 },
     ]);
   });
 
