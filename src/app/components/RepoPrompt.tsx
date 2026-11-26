@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { Prompt } from "@/app/components/Prompt";
 import { parseRepoInput } from "@/lib/repo";
 
-const EXAMPLES = ["vercel/next.js", "facebook/react", "vercel/ai"] as const;
+const EXAMPLES = [
+  "ashisharma06",
+  "vercel/next.js",
+  "facebook/react",
+  "vercel/ai",
+] as const;
 
 export function RepoPrompt() {
   const router = useRouter();
@@ -15,12 +20,16 @@ export function RepoPrompt() {
 
   function handleSubmit() {
     const result = parseRepoInput(value);
-    if (!result.success) {
+    if ("error" in result) {
       setError(result.error);
       inputRef.current?.focus();
       return;
     }
-    router.push(`/story/${result.repo.owner}/${result.repo.repo}`);
+    if (result.kind === "user") {
+      router.push(`/u/${result.username}`);
+      return;
+    }
+    router.push(`/story/${result.owner}/${result.repo}`);
   }
 
   function chooseExample(example: string) {

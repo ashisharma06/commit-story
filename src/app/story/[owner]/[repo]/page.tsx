@@ -76,18 +76,20 @@ async function loadStory(owner: string, repo: string): Promise<LoadResult> {
 export default async function StoryPage({ params }: StoryPageProps) {
   await connection();
   const { owner, repo } = await params;
-  const parsed = parseRepoInput(`${owner}/${repo}`);
-  if (!parsed.success) {
+  const slug = `${owner}/${repo}`;
+  const parsed = parseRepoInput(slug);
+  if ("error" in parsed || parsed.kind !== "repo") {
     return (
       <StoryError
-        command={`commit-story analyze ${owner}/${repo}`}
-        message={parsed.error}
+        command={`commit-story analyze ${slug}`}
+        message={
+          "error" in parsed ? parsed.error : "Expected owner/repo, got a username."
+        }
       />
     );
   }
 
-  const slug = parsed.repo.slug;
-  const result = await loadStory(parsed.repo.owner, parsed.repo.repo);
+  const result = await loadStory(parsed.owner, parsed.repo);
 
   if (!result.ok) {
     return (

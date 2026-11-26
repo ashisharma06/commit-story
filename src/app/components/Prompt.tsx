@@ -25,7 +25,7 @@ export function Prompt({
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <label htmlFor="repo-input" className="sr-only">
-        GitHub repository URL or owner/repo
+        GitHub username or owner/repo
       </label>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-3 text-sm sm:text-base">
         <span className="whitespace-nowrap text-text">
@@ -44,7 +44,7 @@ export function Prompt({
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
-            placeholder="owner/repo"
+            placeholder="username or owner/repo"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "repo-error" : undefined}
             className="min-w-0 max-w-full bg-transparent text-text caret-transparent outline-none placeholder:text-muted"

@@ -13,18 +13,38 @@ describe("parseRepoInput", () => {
     ["git@github.com:vercel/next.js.git", "vercel", "next.js"],
     ["https://github.com/vercel/next.js/tree/canary", "vercel", "next.js"],
     ["https://github.com/vercel/next.js?tab=readme", "vercel", "next.js"],
-  ])("accepts %s", (input, owner, repo) => {
+  ])("accepts repo input %s", (input, owner, repo) => {
     expect(parseRepoInput(input)).toEqual({
-      success: true,
-      repo: { owner, repo, slug: `${owner}/${repo}` },
+      kind: "repo",
+      owner,
+      repo,
+    });
+  });
+
+  it.each([
+    ["ashisharma06", "ashisharma06"],
+    ["@ashisharma06", "ashisharma06"],
+    ["  vercel  ", "vercel"],
+    ["vercel/", "vercel"],
+    ["github.com/octocat", "octocat"],
+    ["https://github.com/octocat", "octocat"],
+    ["http://www.github.com/octocat/", "octocat"],
+    ["https://github.com/octocat?tab=repositories", "octocat"],
+    ["git@github.com:octocat", "octocat"],
+  ])("accepts user input %s", (input, username) => {
+    expect(parseRepoInput(input)).toEqual({
+      kind: "user",
+      username,
     });
   });
 
   it.each([
     [""],
     ["   "],
-    ["vercel"],
-    ["vercel/"],
+    ["-vercel"],
+    ["vercel-"],
+    ["vercel--labs"],
+    ["a".repeat(40)],
     ["/next.js"],
     ["-vercel/next.js"],
     ["vercel-/next.js"],
@@ -33,12 +53,12 @@ describe("parseRepoInput", () => {
     ["vercel/next.js!/"],
     ["https://gitlab.com/vercel/next.js"],
     ["javascript:alert(1)"],
-    ["https://github.com/vercel"],
+    ["https://github.com/vercel/bad name/extra_repo"],
     [123],
     [null],
   ])("rejects %s", (input) => {
     const result = parseRepoInput(input);
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("GitHub repo");
+    expect(result).toHaveProperty("error");
+    if ("error" in result) expect(result.error).toContain("GitHub");
   });
 });

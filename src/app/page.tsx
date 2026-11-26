@@ -26,7 +26,8 @@ export default function Home() {
       </TerminalWindow>
 
       <p className="mt-6 text-xs leading-6 text-muted">
-        public repositories only · GitHub URLs, owner/repo, or git@github.com addresses
+        public repositories only · username or owner/repo · GitHub URLs and
+        git@github.com addresses accepted
       </p>
     </main>
   );

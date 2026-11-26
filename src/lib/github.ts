@@ -6,8 +6,16 @@ const MAX_COMMITS = 1000;
 const MAX_PULL_REQUESTS = 500;
 const MAX_CONTRIBUTORS = 100;
 const MAX_COMMIT_DETAILS = 100;
+const MAX_USER_REPOS = 200;
 const DETAIL_CONCURRENCY = 10;
 const PER_PAGE = 100;
+
+export class UserNotFoundError extends Error {
+  constructor(readonly username: string) {
+    super(`user '${username}' not found`);
+    this.name = "UserNotFoundError";
+  }
+}
 
 export class RepoNotFoundError extends Error {
   constructor(
@@ -42,6 +50,10 @@ type ErrorInfo = {
   headers?: Record<string, unknown>;
 };
 
+type ErrorContext =
+  | { kind: "user"; username: string }
+  | { kind: "repo"; owner: string; repo: string };
+
 function readErrorInfo(error: unknown): ErrorInfo | null {
   if (typeof error !== "object" || error === null) return null;
   const source = error as Record<string, unknown>;
@@ -70,11 +82,7 @@ function readHeader(headers: Record<string, unknown> | undefined, name: string) 
   return undefined;
 }
 
-function toError(
-  error: unknown,
-  owner: string,
-  repo: string,
-): Error {
+function toError(error: unknown, context: ErrorContext): Error {
   const info = readErrorInfo(error);
   if (!info) {
     return error instanceof Error
@@ -82,7 +90,11 @@ function toError(
       : new Error("Unexpected GitHub API error.");
   }
 
-  if (info.status === 404) return new RepoNotFoundError(owner, repo);
+  if (info.status === 404) {
+    return context.kind === "user"
+      ? new UserNotFoundError(context.username)
+      : new RepoNotFoundError(context.owner, context.repo);
+  }
 
   const remainingHeader = readHeader(info.headers, "x-ratelimit-remaining");
   const remaining = remainingHeader === undefined ? NaN : Number(remainingHeader);
@@ -131,20 +143,35 @@ function getClient(): Octokit {
 
 function assertRepo(owner: string, repo: string): void {
   const parsed = parseRepoInput(`${owner}/${repo}`);
-  if (!parsed.success || parsed.repo.owner !== owner || parsed.repo.repo !== repo) {
+  if (
+    "error" in parsed ||
+    parsed.kind !== "repo" ||
+    parsed.owner !== owner ||
+    parsed.repo !== repo
+  ) {
     throw new RepoNotFoundError(owner, repo);
+  }
+}
+
+function assertUsername(username: string): void {
+  const parsed = parseRepoInput(username);
+  if (
+    "error" in parsed ||
+    parsed.kind !== "user" ||
+    parsed.username !== username
+  ) {
+    throw new UserNotFoundError(username);
   }
 }
 
 async function request<T>(
   operation: () => Promise<T>,
-  owner: string,
-  repo: string,
+  context: ErrorContext,
 ): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    throw toError(error, owner, repo);
+    throw toError(error, context);
   }
 }
 
@@ -275,6 +302,65 @@ const contributorSchema = z
 
 const languagesSchema = z.record(z.string(), z.number().int().nonnegative());
 
+const userProfileSchema = z.object({
+  login: z.string(),
+  name: z.string().nullable(),
+  avatar_url: z.string().url().nullable(),
+  public_repos: z.number().int().nonnegative(),
+  bio: z.string().nullable(),
+  type: z.string(),
+});
+
+export type UserProfile = {
+  login: string;
+  name: string | null;
+  avatar_url: string | null;
+  public_repos: number;
+  bio: string | null;
+};
+
+export type UserRepo = {
+  name: string;
+  description: string | null;
+  language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  fork: boolean;
+  pushed_at: string | null;
+  archived: boolean;
+};
+
+const userRepoSchema = z
+  .object({
+    name: z.string(),
+    description: z.string().nullable(),
+    language: z.string().nullable(),
+    stargazers_count: z.number().int().nonnegative(),
+    forks_count: z.number().int().nonnegative(),
+    fork: z.boolean(),
+    pushed_at: z.string().nullable(),
+    archived: z.boolean(),
+    private: z.boolean(),
+  })
+  .transform((data): UserRepo | null => {
+    if (data.private) return null;
+    return {
+      name: data.name,
+      description: data.description,
+      language: data.language,
+      stargazers_count: data.stargazers_count,
+      forks_count: data.forks_count,
+      fork: data.fork,
+      pushed_at: data.pushed_at,
+      archived: data.archived,
+    };
+  });
+
+export type UserReposData = {
+  profile: UserProfile;
+  repos: UserRepo[];
+};
+
 export type RepoMetadata = z.infer<typeof metadataSchema>;
 export type CommitSummary = z.infer<typeof commitSchema>;
 export type PullRequestSummary = z.infer<typeof pullRequestSchema>;
@@ -346,8 +432,7 @@ export async function fetchRepoMetadata(
   const client = getClient();
   const { data } = await request(
     () => client.rest.repos.get({ owner, repo }),
-    owner,
-    repo,
+    { kind: "repo", owner, repo },
   );
   return metadataSchema.parse(data);
 }
@@ -367,8 +452,7 @@ export async function fetchCommits(
   });
   const commits = await request(
     () => collect(pages, limit, (item) => commitSchema.parse(item)),
-    owner,
-    repo,
+    { kind: "repo", owner, repo },
   );
   return mergeCommitDetails(client, owner, repo, commits);
 }
@@ -391,8 +475,7 @@ export async function fetchMergedPullRequests(
   });
   const parsed = await request(
     () => collect(pages, limit, (item) => pullRequestSchema.parse(item)),
-    owner,
-    repo,
+    { kind: "repo", owner, repo },
   );
   return parsed.flatMap((pr) =>
     pr.mergedAt ? [{ ...pr, mergedAt: pr.mergedAt }] : [],
@@ -414,8 +497,7 @@ export async function fetchContributors(
   });
   return request(
     () => collect(pages, limit, (item) => contributorSchema.parse(item)),
-    owner,
-    repo,
+    { kind: "repo", owner, repo },
   );
 }
 
@@ -427,8 +509,7 @@ export async function fetchLanguages(
   const client = getClient();
   const { data } = await request(
     () => client.rest.repos.listLanguages({ owner, repo }),
-    owner,
-    repo,
+    { kind: "repo", owner, repo },
   );
   const bytesByLanguage = languagesSchema.parse(data);
   const total = Object.values(bytesByLanguage).reduce((sum, bytes) => sum + bytes, 0);
@@ -439,6 +520,66 @@ export async function fetchLanguages(
       share: total > 0 ? bytes / total : 0,
     }))
     .sort((a, b) => b.bytes - a.bytes);
+}
+
+function pushedAtTime(repo: UserRepo): number {
+  if (!repo.pushed_at) return Number.NEGATIVE_INFINITY;
+  const time = Date.parse(repo.pushed_at);
+  return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY;
+}
+
+export async function getUserRepos(
+  username: string,
+  cap = MAX_USER_REPOS,
+): Promise<UserReposData> {
+  assertUsername(username);
+  const limit = Math.min(Math.max(cap, 1), MAX_USER_REPOS);
+  const client = getClient();
+  const context = { kind: "user", username } as const;
+
+  const { data: profileData } = await request(
+    () => client.rest.users.getByUsername({ username }),
+    context,
+  );
+  const rawProfile = userProfileSchema.parse(profileData);
+  const profile: UserProfile = {
+    login: rawProfile.login,
+    name: rawProfile.name,
+    avatar_url: rawProfile.avatar_url,
+    public_repos: rawProfile.public_repos,
+    bio: rawProfile.bio,
+  };
+  const isOrganization = rawProfile.type.toLowerCase() === "organization";
+
+  const pages = isOrganization
+    ? client.paginate.iterator(client.rest.repos.listForOrg, {
+        org: username,
+        type: "public",
+        sort: "pushed",
+        direction: "desc",
+        per_page: perPage(limit),
+      })
+    : client.paginate.iterator(client.rest.repos.listForUser, {
+        username,
+        type: "owner",
+        sort: "pushed",
+        direction: "desc",
+        per_page: perPage(limit),
+      });
+
+  const parsed = await request(
+    () => collect(pages, limit, (item) => userRepoSchema.parse(item)),
+    context,
+  );
+  const repos = parsed.flatMap((repo) => (repo ? [repo] : []));
+  repos.sort((a, b) => {
+    const aTime = pushedAtTime(a);
+    const bTime = pushedAtTime(b);
+    if (aTime === bTime) return a.name.localeCompare(b.name);
+    return bTime - aTime;
+  });
+
+  return { profile, repos };
 }
 
 export async function fetchRepoStoryData(
