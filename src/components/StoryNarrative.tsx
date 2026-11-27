@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TypeWriter } from "@/components/TypeWriter";
+import { relativeTime } from "@/lib/time";
 
 type StoryNarrativeProps = {
   owner: string;
   repo: string;
+  cachedAt: string | null;
 };
 
 type StoryStatus = "loading" | "streaming" | "done" | "error";
@@ -19,21 +21,30 @@ function readError(payload: unknown): string | null {
 function NarrativeRun({
   owner,
   repo,
+  refresh,
   onRetry,
-}: StoryNarrativeProps & { onRetry: () => void }) {
+  onCachedAt,
+  onBusyChange,
+}: Omit<StoryNarrativeProps, "cachedAt"> & {
+  refresh: boolean;
+  onRetry: () => void;
+  onCachedAt: (value: string) => void;
+  onBusyChange: (value: boolean) => void;
+}) {
   const [text, setText] = useState("");
   const [status, setStatus] = useState<StoryStatus>("loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    onBusyChange(true);
 
     void (async () => {
       try {
         const response = await fetch("/api/story", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, repo }),
+          body: JSON.stringify({ owner, repo, refresh }),
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
@@ -67,17 +78,23 @@ function NarrativeRun({
         if (controller.signal.aborted) return;
         setText((current) => current + decoder.decode());
         setStatus("done");
+        onCachedAt(
+          response.headers.get("x-commit-story-cached-at") ??
+            new Date().toISOString(),
+        );
+        onBusyChange(false);
       } catch (cause) {
         if (controller.signal.aborted) return;
         setError(
           cause instanceof Error ? cause.message : "narration stream failed",
         );
         setStatus("error");
+        onBusyChange(false);
       }
     })();
 
     return () => controller.abort();
-  }, [owner, repo]);
+  }, [owner, repo, refresh, onCachedAt, onBusyChange]);
 
   const waiting =
     status === "loading" || (status === "streaming" && text.length === 0);
@@ -117,8 +134,21 @@ function NarrativeRun({
   );
 }
 
-export function StoryNarrative({ owner, repo }: StoryNarrativeProps) {
-  const [attempt, setAttempt] = useState(0);
+export function StoryNarrative({ owner, repo, cachedAt }: StoryNarrativeProps) {
+  const [run, setRun] = useState({ attempt: 0, refresh: false });
+  const [lastUpdated, setLastUpdated] = useState<string | null>(cachedAt);
+  const [busy, setBusy] = useState(true);
+
+  const handleCachedAt = useCallback((value: string) => {
+    setLastUpdated(value);
+  }, []);
+  const handleBusyChange = useCallback((value: boolean) => {
+    setBusy(value);
+  }, []);
+
+  function start(nextRefresh: boolean) {
+    setRun((current) => ({ attempt: current.attempt + 1, refresh: nextRefresh }));
+  }
 
   return (
     <section aria-label={`AI narrative for ${owner}/${repo}`} className="min-w-0">
@@ -129,11 +159,30 @@ export function StoryNarrative({ owner, repo }: StoryNarrativeProps) {
         commit-story narrate {owner}/{repo}
       </p>
       <NarrativeRun
-        key={`${owner}/${repo}:${attempt}`}
+        key={`${owner}/${repo}:${run.attempt}`}
         owner={owner}
         repo={repo}
-        onRetry={() => setAttempt((current) => current + 1)}
+        refresh={run.refresh}
+        onRetry={() => start(false)}
+        onCachedAt={handleCachedAt}
+        onBusyChange={handleBusyChange}
       />
+      <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+        {lastUpdated ? (
+          <span>
+            last updated:{" "}
+            <span suppressHydrationWarning>{relativeTime(lastUpdated)}</span>
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => start(true)}
+          disabled={busy}
+          className="flex min-h-11 items-center text-link hover:underline disabled:cursor-not-allowed disabled:text-muted"
+        >
+          $ refresh
+        </button>
+      </div>
     </section>
   );
 }

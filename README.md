@@ -130,3 +130,51 @@ The whole app is styled as a terminal: a dark theme, a single monospace font, a 
 ## Author
 
 Built by [Ashish Sharma](https://github.com/ashisharma06).
+=======
+# Commit Story
+
+A terminal-style Next.js app that turns a public GitHub repository's history into a readable, streamed narrative. Commit, PR, and language data is analyzed on the server; the browser only receives the rendered story.
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+Server-only environment variables:
+
+- `GITHUB_TOKEN` — optional; raises the GitHub API limit from 60 to 5,000 requests/hour.
+- `GOOGLE_GENERATIVE_AI_API_KEY` — required to generate new narratives.
+- `AI_MODEL` — optional; defaults to `gemini-2.5-flash`.
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — optional; enable shared caching and rate limits.
+
+Never expose these values to the client. Local dev without Upstash credentials logs one warning, disables caching, and uses in-memory rate limiters instead of crashing.
+
+## Caching and rate limits
+
+Upstash Redis is used for shared caching and distributed rate limiting. `@upstash/ratelimit` provides sliding-window limits; `@upstash/redis` stores JSON cache entries.
+
+- Repository metadata, commits, PRs, and languages are cached for 6 hours under `cs:repo:{owner}/{repo}:{latestCommitSha}`.
+- Narratives are cached for 24 hours under `cs:narrative:{owner}/{repo}:{latestCommitSha}` and replayed as a text stream, so the typewriter still works without calling the LLM.
+- User repo lists are cached for 15 minutes.
+- Only complete, successful, non-empty generations are cached. Errors, aborts, and truncated streams are never cached.
+- `$ refresh` on the story page bypasses the cache and is limited to 1 refresh per repo per 5 minutes per IP.
+- New narrations are limited to 5 requests per minute per IP and 30 per day per IP. Cached narrative hits do not consume either limit. 429 responses include the reset time in the terminal error line.
+
+## Commands
+
+```bash
+npm run dev
+npm run test
+npm run lint
+npm run build
+```
+
+## Deploy
+
+Deploy to Vercel with the server-only environment variables above configured in the project settings.
+>>>>>>> 778a40d (Add caching and proper rate limiting with Upstash Redis)

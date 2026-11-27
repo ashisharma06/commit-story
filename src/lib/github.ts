@@ -437,6 +437,26 @@ export async function fetchRepoMetadata(
   return metadataSchema.parse(data);
 }
 
+export async function fetchLatestCommitSha(
+  owner: string,
+  repo: string,
+): Promise<string | null> {
+  assertRepo(owner, repo);
+  const client = getClient();
+  const context = { kind: "repo", owner, repo } as const;
+
+  try {
+    const { data } = await request(
+      () => client.rest.repos.listCommits({ owner, repo, per_page: 1 }),
+      context,
+    );
+    return data[0]?.sha ?? null;
+  } catch (error) {
+    if (error instanceof Error && /empty/i.test(error.message)) return null;
+    throw error;
+  }
+}
+
 export async function fetchCommits(
   owner: string,
   repo: string,

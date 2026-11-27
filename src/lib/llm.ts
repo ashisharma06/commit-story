@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { createTextStreamResponse, streamText, toTextStream } from "ai";
 import type { RepoInsights } from "@/lib/analyze";
+import { NARRATIVE_CACHE_TTL_SECONDS, setCached } from "@/lib/cache";
 import type { CommitSummary, MergedPullRequest } from "@/lib/github";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
@@ -167,20 +168,48 @@ export function buildStoryInput(
   return capStoryInput(lines.join("\n"));
 }
 
+export function cachedStoryResponse(text: string, cachedAt: string): Response {
+  return new Response(text, {
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "X-Commit-Story-Cache": "HIT",
+      "X-Commit-Story-Cached-At": cachedAt,
+    },
+  });
+}
+
 export function streamStoryResponse({
   prompt,
   signal,
+  cacheKey,
+  cacheStatus = "MISS",
 }: {
   prompt: string;
   signal: AbortSignal;
+  cacheKey?: string;
+  cacheStatus?: "MISS" | "BYPASS";
 }): Response {
   const result = streamText({
     model: google(resolveStoryModelName()),
     instructions: STORY_SYSTEM_PROMPT,
     prompt,
     temperature: 0.7,
-    maxOutputTokens: 900,
+    maxOutputTokens: 1200,
+    providerOptions: {
+      google: {
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    },
     abortSignal: signal,
+    onError: () => undefined,
+    onEnd: async (event) => {
+      // Only a complete, non-truncated, non-empty generation is cacheable.
+      if (!cacheKey || event.finishReason !== "stop") return;
+      if (!event.text.trim()) return;
+      await setCached(cacheKey, event.text, NARRATIVE_CACHE_TTL_SECONDS);
+    },
   });
 
   return createTextStreamResponse({
@@ -189,6 +218,8 @@ export function streamStoryResponse({
       "Cache-Control": "no-store",
       "Content-Type": "text/plain; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
+      "X-Commit-Story-Cache": cacheKey ? cacheStatus : "NO-STORE",
+      "X-Commit-Story-Cached-At": new Date().toISOString(),
     },
   });
 }

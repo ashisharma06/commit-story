@@ -3,12 +3,12 @@ import { connection } from "next/server";
 import { TerminalWindow } from "@/app/components/TerminalWindow";
 import { UserRepoList, type UserRepoRow } from "@/app/components/UserRepoList";
 import {
-  getUserRepos,
   RateLimitError,
   UserNotFoundError,
   type UserReposData,
 } from "@/lib/github";
 import { parseRepoInput } from "@/lib/repo";
+import { loadCachedUserRepos } from "@/lib/story";
 import { relativeTime } from "@/lib/time";
 
 type UserPageProps = {
@@ -56,7 +56,7 @@ function UserError({
 
 async function loadUser(username: string): Promise<LoadResult> {
   try {
-    const data = await getUserRepos(username);
+    const data = await loadCachedUserRepos(username);
     return { ok: true, data };
   } catch (error) {
     if (error instanceof UserNotFoundError) {

@@ -38,4 +38,15 @@ describe("createRateLimiter", () => {
     expect(limiter.check("b").allowed).toBe(true);
     expect(limiter.check("a").allowed).toBe(false);
   });
+
+  it("includes a reset timestamp for 429 responses", () => {
+    const limiter = createRateLimiter({
+      limit: 1,
+      windowMs: 1000,
+      now: () => 0,
+    });
+
+    expect(limiter.check("127.0.0.1").resetAt).toBe(1000);
+    expect(limiter.check("127.0.0.1").resetAt).toBe(1000);
+  });
 });

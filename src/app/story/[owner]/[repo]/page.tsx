@@ -8,13 +8,13 @@ import { StoryNarrative } from "@/components/StoryNarrative";
 import { StoryPrompt } from "@/components/StoryPrompt";
 import { StoryVisuals } from "@/components/StoryVisuals";
 import { analyzeRepo } from "@/lib/analyze";
+import type { RepoStoryData } from "@/lib/github";
 import { parseRepoInput } from "@/lib/repo";
 import {
   describeStoryError,
-  loadRepoHistory,
-  loadRepoSummary,
-  type RepoHistoryData,
-  type RepoSummaryData,
+  loadNarrativeCachedAt,
+  loadRepoStoryData,
+  type RepoStorySnapshot,
   type StoryLoadError,
 } from "@/lib/story";
 
@@ -82,7 +82,7 @@ function SectionError({
   );
 }
 
-function RepoSummaryContent({ data }: { data: RepoSummaryData }) {
+function RepoSummaryContent({ data }: { data: RepoStoryData }) {
   const { metadata, languages, contributors } = data;
   const maxShare = Math.max(...languages.map((language) => language.share), 0);
 
@@ -154,7 +154,7 @@ function RepoSummaryContent({ data }: { data: RepoSummaryData }) {
   );
 }
 
-async function RepoSummary({ promise }: { promise: Promise<RepoSummaryData> }) {
+async function RepoSummary({ promise }: { promise: Promise<RepoStoryData> }) {
   const result = await settle(promise);
   if (!result.ok) {
     return <SectionError label="// repository" error={result.error} />;
@@ -167,7 +167,7 @@ async function StoryHistory({
   owner,
   repo,
 }: {
-  promise: Promise<RepoHistoryData>;
+  promise: Promise<RepoStorySnapshot>;
   owner: string;
   repo: string;
 }) {
@@ -176,13 +176,23 @@ async function StoryHistory({
     return <SectionError label="// history" error={result.error} />;
   }
 
+  const narrativeCachedAt = await loadNarrativeCachedAt(
+    owner,
+    repo,
+    result.value.headSha,
+  ).catch(() => null);
+
   return (
     <>
       <StoryVisuals
         insights={analyzeRepo(result.value.commits, result.value.pullRequests)}
       />
       <div className="mt-10 min-w-0 border-t border-border pt-6">
-        <StoryNarrative owner={owner} repo={repo} />
+        <StoryNarrative
+          owner={owner}
+          repo={repo}
+          cachedAt={narrativeCachedAt}
+        />
       </div>
     </>
   );
@@ -205,8 +215,7 @@ async function StoryRoute({ params }: StoryPageProps) {
     );
   }
 
-  const summaryPromise = loadRepoSummary(parsed.owner, parsed.repo);
-  const historyPromise = loadRepoHistory(parsed.owner, parsed.repo);
+  const storyPromise = loadRepoStoryData(parsed.owner, parsed.repo);
 
   return (
     <TerminalWindow title={`commit-story ~ ${slug}`}>
@@ -227,14 +236,14 @@ async function StoryRoute({ params }: StoryPageProps) {
 
       <div className="mt-8 min-w-0">
         <Suspense fallback={<BootLines stage="repo" />}>
-          <RepoSummary promise={summaryPromise} />
+          <RepoSummary promise={storyPromise} />
         </Suspense>
       </div>
 
       <div className="mt-8 min-w-0 border-t border-border pt-6">
         <Suspense fallback={<BootLines stage="history" />}>
           <StoryHistory
-            promise={historyPromise}
+            promise={storyPromise}
             owner={parsed.owner}
             repo={parsed.repo}
           />
