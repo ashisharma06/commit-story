@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# commit story_
 
-## Getting Started
+**Your code has a story. Read it.**
 
-First, run the development server:
+Commit Story turns any public GitHub user's repository history into a terminal-style visual timeline and an AI-written narrative. Enter a username, pick a repo, and read its history as chapters: commits, contributors, eras, and the people behind the code.
+
+**Live demo:** [your-app.vercel.app](https://your-app.vercel.app)
+
+![Landing page](./docs/landing.png)
+
+<p>
+  <img src="./docs/picker.png" alt="Repository picker" width="49%" />
+  <img src="./docs/story.png" alt="Story page" width="49%" />
+</p>
+
+---
+
+## Features
+
+- **Username or repo input**: enter `username` or `owner/repo` (full GitHub URLs and `git@github.com` addresses also work). A username opens a repo picker; `owner/repo` goes straight to the story.
+- **Terminal-style repo picker**: an `ls -la`-style listing with live filtering, a toggle to hide forks and archived repos, and keyboard navigation.
+- **Repository insights**: commits per week, busiest day and hour, contributor leaderboard, longest commit streak, biggest commits, and automatically detected "eras" of the project.
+- **Visual timeline**: ASCII git graph, block-character bars, a contribution heatmap, and an activity chart, all in one consistent terminal theme.
+- **AI-written story**: a streamed narrative, one chapter per era, grounded only in the repository's real data.
+- **Handles thin data gracefully**: repos with one commit or one contributor show honest, compact output instead of empty sections.
+- **Keyboard-first**: auto-focused prompt, `/` to focus input, `j`/`k` to move around, `?` for shortcuts.
+- **Responsive and accessible**: works from phone to desktop and respects `prefers-reduced-motion`.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Username or owner/repo] --> B[Repo picker]
+    B --> C[GitHub API via Octokit]
+    C --> D[Zod validation]
+    D --> E[Analysis engine: insights and eras]
+    E --> F[Terminal UI: graph, charts, chapters]
+    E --> G[LLM via Vercel AI SDK]
+    G --> H[Streamed narrative]
+    H --> F
+```
+
+1. The input is parsed and validated (`src/lib/repo.ts`).
+2. Repository data (metadata, commits, merged PRs, contributors, languages) is fetched with pagination and rate-limit handling (`src/lib/github.ts`).
+3. Pure, unit-tested functions turn raw data into a typed `RepoInsights` object (`src/lib/analyze.ts`).
+4. The UI renders the insights as a terminal-themed timeline.
+5. A compact summary of the insights and the most significant commit messages is sent to an LLM, which streams back the story.
+
+## Tech stack
+
+| Area | Tools |
+|---|---|
+| Framework | Next.js (App Router), React, TypeScript |
+| Styling | Tailwind CSS, custom terminal design system |
+| Data | Octokit (GitHub REST API), Zod |
+| Charts | Recharts, custom ASCII components |
+| AI | Vercel AI SDK, Google Gemini |
+| Testing | Vitest |
+| Deployment | Vercel |
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20 or newer
+- A [GitHub personal access token](https://github.com/settings/tokens) (no scopes needed for public repos)
+- An LLM API key (Google AI Studio offers a free tier)
+
+### Setup
+
+```bash
+git clone https://github.com/ashisharma06/commit-story.git
+cd commit-story
+npm install
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+```
+GITHUB_TOKEN=
+GOOGLE_GENERATIVE_AI_API_KEY=
+AI_MODEL=
+```
+
+| Variable | Purpose |
+|---|---|
+| `GITHUB_TOKEN` | Raises the GitHub API limit from 60 to 5,000 requests per hour |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | API key for the LLM that writes the story |
+| `AI_MODEL` | Model name to use, so it can be swapped without code changes |
+
+Then start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run unit tests with Vitest |
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    page.tsx                   Landing page with the prompt
+    u/[username]/              Repository picker
+    story/[owner]/[repo]/      Story page
+    api/story/                 Streaming narrative route handler
+  components/                  Terminal UI: prompt, graph, bars, heatmap, chapters
+  lib/
+    repo.ts                    Input parsing and validation
+    github.ts                  GitHub API client
+    analyze.ts                 Insights and era detection
+    llm.ts                     Prompt building for the narrative
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The whole app is styled as a terminal: a dark theme, a single monospace font, a green accent, ASCII graph and bar components, a boot-sequence loading state, and a typewriter effect for the AI story.
 
-## Deploy on Vercel
+## Known limitations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Only **public** repositories are supported.
+- History is capped at the most recent 1,000 commits per repository for speed and API limits.
+- Rate limiting is **in-memory**, so it is not reliable across serverless instances.
+- There is **no caching** yet, so each visit refetches data and regenerates the story.
+- The AI narrative is grounded in commit messages and statistics, so repos with vague commit messages produce vaguer stories.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Possible next steps
+
+- Redis caching and distributed rate limiting
+- Dynamic Open Graph images for shareable links
+- Embeddable README badge
+- GitHub OAuth for private repositories
+- Compare two repositories side by side
+
+## Author
+
+Built by [Ashish Sharma](https://github.com/ashisharma06).
