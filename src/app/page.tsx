@@ -13,11 +13,14 @@ export default function Home() {
             _
           </span>
         </h1>
-        <p className="mt-4 max-w-xl text-sm leading-relaxed break-words text-text sm:text-base">
-          Spotify Wrapped for a repository. Paste a public GitHub repo and read
-          its history as chapters: commits, contributors, eras, and the people
-          behind the code.
-        </p>
+        <div className="mt-4 max-w-xl min-w-0">
+          <p className="text-base leading-relaxed break-words text-text sm:text-lg">
+            Your code has a story. Read it.
+          </p>
+          <p className="mt-1 text-sm leading-relaxed break-words text-muted">
+            Enter a GitHub username or owner/repo.
+          </p>
+        </div>
       </div>
 
       <RepoPrompt />
