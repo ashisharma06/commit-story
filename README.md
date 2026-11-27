@@ -28,23 +28,8 @@ Commit Story turns any public GitHub user's repository history into a terminal-s
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A[Username or owner/repo] --> B[Repo picker]
-    B --> C[GitHub API via Octokit]
-    C --> D[Zod validation]
-    D --> E[Analysis engine: insights and eras]
-    E --> F[Terminal UI: graph, charts, chapters]
-    E --> G[LLM via Vercel AI SDK]
-    G --> H[Streamed narrative]
-    H --> F
-```
+<img width="3309" height="763" alt="image" src="https://github.com/user-attachments/assets/9974a40e-3000-4f70-a829-6263724dc9c6" />
 
-1. The input is parsed and validated (`src/lib/repo.ts`).
-2. Repository data (metadata, commits, merged PRs, contributors, languages) is fetched with pagination and rate-limit handling (`src/lib/github.ts`).
-3. Pure, unit-tested functions turn raw data into a typed `RepoInsights` object (`src/lib/analyze.ts`).
-4. The UI renders the insights as a terminal-themed timeline.
-5. A compact summary of the insights and the most significant commit messages is sent to an LLM, which streams back the story.
 
 ## Tech stack
 
