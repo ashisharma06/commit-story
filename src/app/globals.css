@@ -5,7 +5,10 @@
   --surface: #12161b;
   --border: #1f262e;
   --text: #c9d1d9;
-  --muted: #6b7785;
+  /* Text muted: 5.98:1 on #0b0d10, 5.58:1 on #12161b. */
+  --muted: #84909c;
+  /* Decorative only; does not meet text contrast on the dark palette. */
+  --muted-dim: #6b7785;
   --accent: #7cffb2;
   --warning: #ffc857;
   --error: #ff6b6b;
@@ -48,11 +51,6 @@
     color: var(--background);
   }
 
-  :focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 3px;
-  }
-
   body::after {
     content: "";
     position: fixed;
@@ -71,6 +69,11 @@
 }
 
 /* Unlayered so it wins over Tailwind's utility layer. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 html,
 body {
   max-width: 100%;

@@ -124,7 +124,7 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
-            className="min-h-11 min-w-0 flex-1 bg-transparent text-sm text-text caret-transparent outline-none placeholder:text-muted"
+            className="min-h-11 min-w-0 flex-1 bg-transparent text-sm text-text caret-transparent placeholder:text-muted"
           />
           <span aria-hidden="true" className="terminal-cursor shrink-0" />
         </div>

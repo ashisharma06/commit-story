@@ -44,6 +44,39 @@ export class RateLimitError extends Error {
   }
 }
 
+export class PrivateRepoError extends Error {
+  constructor(
+    readonly owner: string,
+    readonly repo: string,
+  ) {
+    super(
+      `Repository ${owner}/${repo} is private. Commit Story only analyzes public repositories.`,
+    );
+    this.name = "PrivateRepoError";
+  }
+}
+
+export class EmptyRepoError extends Error {
+  constructor(
+    readonly owner: string,
+    readonly repo: string,
+  ) {
+    super(
+      `Repository ${owner}/${repo} has no commits yet. There is no history to narrate.`,
+    );
+    this.name = "EmptyRepoError";
+  }
+}
+
+export class GithubUnavailableError extends Error {
+  constructor() {
+    super(
+      "GitHub is unavailable right now. Check your connection and try again.",
+    );
+    this.name = "GithubUnavailableError";
+  }
+}
+
 type ErrorInfo = {
   status?: number;
   message?: string;
@@ -108,6 +141,13 @@ function toError(error: unknown, context: ErrorContext): Error {
     (info.status === 403 || info.status === 429) &&
     (remaining === 0 || /rate limit/i.test(info.message ?? ""));
   if (looksRateLimited) return new RateLimitError(resetAt, remaining);
+
+  if (
+    info.status === undefined ||
+    (info.status >= 500 && info.status < 600)
+  ) {
+    return new GithubUnavailableError();
+  }
 
   return error instanceof Error ? error : new Error(info.message ?? "GitHub API error.");
 }
@@ -434,7 +474,9 @@ export async function fetchRepoMetadata(
     () => client.rest.repos.get({ owner, repo }),
     { kind: "repo", owner, repo },
   );
-  return metadataSchema.parse(data);
+  const parsed = metadataSchema.parse(data);
+  if (parsed.private) throw new PrivateRepoError(owner, repo);
+  return parsed;
 }
 
 export async function fetchLatestCommitSha(
@@ -615,6 +657,8 @@ export async function fetchRepoStoryData(
       fetchContributors(owner, repo),
       fetchLanguages(owner, repo),
     ]);
+
+  if (commits.length === 0) throw new EmptyRepoError(owner, repo);
 
   return { metadata, commits, pullRequests, contributors, languages };
 }

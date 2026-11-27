@@ -1,8 +1,8 @@
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { AsciiBar } from "@/components/AsciiBar";
 import { Chapter } from "@/components/Chapter";
-import { CommitsOverTime } from "@/components/CommitsOverTime";
 import { GitGraph } from "@/components/GitGraph";
+import { LazyCommitsOverTime } from "@/components/LazyCommitsOverTime";
 import { StoryKeyboard } from "@/components/StoryKeyboard";
 import type { Era, MilestoneCommit, RepoInsights } from "@/lib/analyze";
 
@@ -56,7 +56,7 @@ export function StoryVisuals({ insights }: { insights: RepoInsights }) {
             days={insights.activityByDay}
             lastActivityAt={insights.lastCommitAt}
           />
-          <CommitsOverTime weeks={insights.commitsPerWeek} />
+          <LazyCommitsOverTime weeks={insights.commitsPerWeek} />
 
           <div className="min-w-0">
             <p className="terminal-label mb-4 text-muted uppercase">

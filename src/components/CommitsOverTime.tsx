@@ -79,6 +79,7 @@ export function CommitsOverTime({ weeks }: { weeks: readonly WeekBucket[] }) {
         {"// commits over time"}
       </p>
       <div
+        role="img"
         className="h-44 w-full min-w-0"
         aria-label="Commits per week line chart"
       >

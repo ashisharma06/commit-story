@@ -39,14 +39,16 @@ export function Prompt({
           onChange={(event) => onChange(event.target.value)}
           aria-label="GitHub username or owner/repo"
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "repo-error" : undefined}
+          aria-describedby={error ? "repo-hint repo-error" : "repo-hint"}
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-text caret-accent outline-none focus:outline-none focus-visible:outline-none"
+          className="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-text caret-accent"
         />
       </div>
-      <p className="sr-only">Press Enter to analyze the repository.</p>
+      <p id="repo-hint" className="sr-only">
+        Press Enter to analyze the repository.
+      </p>
       {error ? (
         <p
           id="repo-error"

@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { TerminalWindow } from "@/app/components/TerminalWindow";
 import { AsciiBar } from "@/components/AsciiBar";
 import { BootLines, BootSequence } from "@/components/BootSequence";
+import { LoadErrorView } from "@/components/LoadErrorView";
 import { StoryNarrative } from "@/components/StoryNarrative";
 import { StoryPrompt } from "@/components/StoryPrompt";
 import { StoryVisuals } from "@/components/StoryVisuals";
@@ -78,32 +79,13 @@ async function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
   }
 }
 
-function StoryError({
-  command,
-  message,
-  hint,
-}: {
-  command: string;
-  message: string;
-  hint?: string;
-}) {
-  return (
-    <TerminalWindow title="commit-story ~ error">
-      <p className="break-words text-sm">
-        <span aria-hidden="true" className="accent-glow text-accent">
-          $
-        </span>{" "}
-        {command}
-      </p>
-      <p role="alert" className="mt-6 break-words text-sm text-error">
-        error: {message}
-      </p>
-      {hint ? <p className="mt-3 break-words text-sm text-muted">{hint}</p> : null}
-      <Link href="/" className="mt-8 inline-block text-sm text-link hover:underline">
-        $ cd ..
-      </Link>
-    </TerminalWindow>
-  );
+function invalidInputError(message: string): StoryLoadError {
+  return {
+    kind: "invalid-input",
+    title: "invalid input",
+    message,
+    hint: "Use owner/repo or a GitHub username, for example vercel/next.js.",
+  };
 }
 
 function SectionError({
@@ -116,6 +98,10 @@ function SectionError({
   return (
     <div className="min-w-0">
       <p className="terminal-label mb-3 text-muted uppercase">{label}</p>
+      <p className="terminal-label mb-2 text-warning uppercase">
+        {"// "}
+        {error.title}
+      </p>
       <p role="alert" className="break-words text-sm text-error">
         error: {error.message}
       </p>
@@ -189,6 +175,7 @@ function RepoSummaryContent({ data }: { data: RepoStoryData }) {
           href={metadata.url}
           target="_blank"
           rel="noreferrer"
+          aria-label={`View ${metadata.fullName} on GitHub (opens in a new tab)`}
           className="mt-3 inline-block max-w-full break-all text-link hover:underline"
         >
           view on GitHub ↗
@@ -268,11 +255,13 @@ async function StoryRoute({ params }: StoryPageProps) {
 
   if ("error" in parsed || parsed.kind !== "repo") {
     return (
-      <StoryError
+      <LoadErrorView
         command={`commit-story analyze ${slug}`}
-        message={
-          "error" in parsed ? parsed.error : "Expected owner/repo, got a username."
-        }
+        error={invalidInputError(
+          "error" in parsed
+            ? parsed.error
+            : "Expected owner/repo, got a username.",
+        )}
       />
     );
   }
@@ -325,6 +314,7 @@ async function StoryRoute({ params }: StoryPageProps) {
 export default function StoryPage({ params }: StoryPageProps) {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 md:px-8">
+      <h1 className="sr-only">Commit Story</h1>
       <Suspense fallback={<BootSequence stage="route" />}>
         <StoryRoute params={params} />
       </Suspense>

@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  EmptyRepoError,
   fetchCommits,
   fetchLanguages,
   fetchMergedPullRequests,
   fetchRepoMetadata,
+  fetchRepoStoryData,
   getUserRepos,
+  GithubUnavailableError,
+  PrivateRepoError,
   RateLimitError,
   RepoNotFoundError,
   UserNotFoundError,
@@ -196,6 +200,37 @@ describe("GitHub data layer", () => {
         new Date(1700000000 * 1000).toISOString(),
       );
     }
+  });
+
+  it("maps network failures to GithubUnavailableError", async () => {
+    mocks.reposGet.mockRejectedValue(new TypeError("fetch failed"));
+
+    await expect(
+      fetchRepoMetadata("octocat", "Hello-World"),
+    ).rejects.toBeInstanceOf(GithubUnavailableError);
+  });
+
+  it("rejects private repositories before building a story", async () => {
+    mocks.reposGet.mockResolvedValue({
+      data: { ...metadata, private: true },
+    });
+
+    await expect(
+      fetchRepoMetadata("octocat", "Hello-World"),
+    ).rejects.toBeInstanceOf(PrivateRepoError);
+  });
+
+  it("rejects repositories with no commits before building a story", async () => {
+    mocks.reposGet.mockResolvedValue({ data: metadata });
+    mocks.paginateIterator
+      .mockReturnValueOnce(pageOf([]))
+      .mockReturnValueOnce(pageOf([]))
+      .mockReturnValueOnce(pageOf([]));
+    mocks.listLanguages.mockResolvedValue({ data: {} });
+
+    await expect(
+      fetchRepoStoryData("octocat", "Hello-World"),
+    ).rejects.toBeInstanceOf(EmptyRepoError);
   });
 
   it("paginates commits, stops at the cap, and attaches file counts", async () => {

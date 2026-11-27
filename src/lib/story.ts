@@ -16,8 +16,12 @@ import {
   fetchLatestCommitSha,
   fetchRepoStoryData,
   getUserRepos,
+  EmptyRepoError,
+  GithubUnavailableError,
+  PrivateRepoError,
   RateLimitError,
   RepoNotFoundError,
+  UserNotFoundError,
   type RepoStoryData,
   type UserReposData,
 } from "@/lib/github";
@@ -31,7 +35,21 @@ export type UserReposSnapshot = UserReposData & {
   cachedAt: string;
 };
 
-export type StoryLoadError = { message: string; hint?: string };
+export type LoadErrorKind =
+  | "invalid-input"
+  | "repo-not-found"
+  | "user-not-found"
+  | "private-repo"
+  | "empty-repo"
+  | "rate-limited"
+  | "unavailable";
+
+export type StoryLoadError = {
+  kind: LoadErrorKind;
+  title: string;
+  message: string;
+  hint?: string;
+};
 
 /** Short-lived pointer so full repo data only refetches when HEAD changes. */
 export async function resolveHeadSha(
@@ -144,18 +162,78 @@ export async function loadCachedUserRepos(
   return { ...data, cachedAt };
 }
 
+function rateLimitHint(error: RateLimitError): string {
+  return `reset: ${error.resetAt?.toISOString() ?? "unknown"} · remaining: ${error.remaining}`;
+}
+
 export function describeStoryError(error: unknown): StoryLoadError {
   if (error instanceof RepoNotFoundError) {
-    return { message: error.message };
+    return {
+      kind: "repo-not-found",
+      title: "repository not found",
+      message: error.message,
+      hint: "Check the owner and repo name, or choose a public repository.",
+    };
+  }
+  if (error instanceof PrivateRepoError) {
+    return {
+      kind: "private-repo",
+      title: "private repository",
+      message: error.message,
+      hint: "Add a GITHUB_TOKEN with access, or analyze a public repository.",
+    };
+  }
+  if (error instanceof EmptyRepoError) {
+    return {
+      kind: "empty-repo",
+      title: "empty repository",
+      message: error.message,
+      hint: "Commit once, then run the analysis again.",
+    };
   }
   if (error instanceof RateLimitError) {
     return {
+      kind: "rate-limited",
+      title: "rate limited",
       message: error.message,
-      hint: `reset: ${error.resetAt?.toISOString() ?? "unknown"} · remaining: ${error.remaining}`,
+      hint: rateLimitHint(error),
     };
   }
-  if (error instanceof Error) {
-    return { message: `Unexpected error: ${error.message}` };
+  return {
+    kind: "unavailable",
+    title: "GitHub unavailable",
+    message:
+      error instanceof GithubUnavailableError
+        ? error.message
+        : "GitHub could not be reached. Please try again in a moment.",
+    hint: "Your cached story may still be available on a later visit.",
+  };
+}
+
+export function describeUserError(error: unknown): StoryLoadError {
+  if (error instanceof UserNotFoundError) {
+    return {
+      kind: "user-not-found",
+      title: "user not found",
+      message: error.message,
+      hint: "Check the username or paste owner/repo instead.",
+    };
   }
-  return { message: "Unexpected GitHub error." };
+  if (error instanceof RateLimitError) {
+    return {
+      kind: "rate-limited",
+      title: "rate limited",
+      message: error.message,
+      hint: rateLimitHint(error),
+    };
+  }
+  return {
+    kind: "unavailable",
+    title: "GitHub unavailable",
+    message:
+      error instanceof GithubUnavailableError
+        ? error.message
+        : "GitHub could not be reached. Please try again in a moment.",
+    hint: "Try again shortly.",
+  };
 }
