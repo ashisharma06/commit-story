@@ -45,16 +45,16 @@ function StoryError({
 }) {
   return (
     <TerminalWindow title="commit-story ~ error">
-      <p className="text-sm">
+      <p className="break-words text-sm">
         <span aria-hidden="true" className="accent-glow text-accent">
           $
         </span>{" "}
         {command}
       </p>
-      <p role="alert" className="mt-6 text-sm text-error">
+      <p role="alert" className="mt-6 break-words text-sm text-error">
         error: {message}
       </p>
-      {hint ? <p className="mt-3 text-sm text-muted">{hint}</p> : null}
+      {hint ? <p className="mt-3 break-words text-sm text-muted">{hint}</p> : null}
       <Link href="/" className="mt-8 inline-block text-sm text-link hover:underline">
         $ cd ..
       </Link>
@@ -70,14 +70,14 @@ function SectionError({
   error: StoryLoadError;
 }) {
   return (
-    <div>
-      <p className="mb-3 text-xs tracking-[0.18em] text-muted uppercase">
-        {label}
-      </p>
-      <p role="alert" className="text-sm text-error">
+    <div className="min-w-0">
+      <p className="terminal-label mb-3 text-muted uppercase">{label}</p>
+      <p role="alert" className="break-words text-sm text-error">
         error: {error.message}
       </p>
-      {error.hint ? <p className="mt-2 text-xs text-muted">{error.hint}</p> : null}
+      {error.hint ? (
+        <p className="mt-2 break-words text-sm text-muted">{error.hint}</p>
+      ) : null}
     </div>
   );
 }
@@ -87,40 +87,32 @@ function RepoSummaryContent({ data }: { data: RepoSummaryData }) {
   const maxShare = Math.max(...languages.map((language) => language.share), 0);
 
   return (
-    <div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm sm:grid-cols-4">
-        <div>
-          <dt className="text-xs tracking-[0.14em] text-muted uppercase">
-            open issues
-          </dt>
+    <div className="min-w-0">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm md:grid-cols-4">
+        <div className="min-w-0">
+          <dt className="terminal-label text-muted uppercase">open issues</dt>
           <dd className="mt-1 text-lg text-accent">{metadata.openIssues}</dd>
         </div>
-        <div>
-          <dt className="text-xs tracking-[0.14em] text-muted uppercase">
-            contributors
-          </dt>
+        <div className="min-w-0">
+          <dt className="terminal-label text-muted uppercase">contributors</dt>
           <dd className="mt-1 text-lg text-accent">{contributors.length}</dd>
         </div>
-        <div>
-          <dt className="text-xs tracking-[0.14em] text-muted uppercase">
-            stars
-          </dt>
+        <div className="min-w-0">
+          <dt className="terminal-label text-muted uppercase">stars</dt>
           <dd className="mt-1 text-lg text-accent">
             {metadata.stars.toLocaleString()}
           </dd>
         </div>
-        <div>
-          <dt className="text-xs tracking-[0.14em] text-muted uppercase">
-            forks
-          </dt>
+        <div className="min-w-0">
+          <dt className="terminal-label text-muted uppercase">forks</dt>
           <dd className="mt-1 text-lg text-accent">
             {metadata.forks.toLocaleString()}
           </dd>
         </div>
       </dl>
 
-      <div className="mt-8">
-        <p className="mb-3 text-xs tracking-[0.18em] text-muted uppercase">
+      <div className="mt-8 min-w-0">
+        <p className="terminal-label mb-3 text-muted uppercase">
           {"// language breakdown"}
         </p>
         {languages.length === 0 ? (
@@ -141,11 +133,11 @@ function RepoSummaryContent({ data }: { data: RepoSummaryData }) {
         )}
       </div>
 
-      <div className="mt-8 border-t border-border pt-6 text-sm leading-7">
-        <p className="text-text">
+      <div className="mt-8 min-w-0 border-t border-border pt-6 text-sm leading-relaxed">
+        <p className="break-words text-text">
           {metadata.description ?? "No description provided."}
         </p>
-        <p className="mt-2 text-muted">
+        <p className="mt-2 break-words text-muted">
           created {metadata.createdAt.slice(0, 10)} · default branch{" "}
           {metadata.defaultBranch}
         </p>
@@ -153,7 +145,7 @@ function RepoSummaryContent({ data }: { data: RepoSummaryData }) {
           href={metadata.url}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-block text-link hover:underline"
+          className="mt-3 inline-block max-w-full break-all text-link hover:underline"
         >
           view on GitHub ↗
         </a>
@@ -189,7 +181,7 @@ async function StoryHistory({
       <StoryVisuals
         insights={analyzeRepo(result.value.commits, result.value.pullRequests)}
       />
-      <div className="mt-10 border-t border-border pt-6">
+      <div className="mt-10 min-w-0 border-t border-border pt-6">
         <StoryNarrative owner={owner} repo={repo} />
       </div>
     </>
@@ -218,25 +210,28 @@ async function StoryRoute({ params }: StoryPageProps) {
 
   return (
     <TerminalWindow title={`commit-story ~ ${slug}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="text-sm">
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-3">
+        <p className="min-w-0 break-words text-sm">
           <span aria-hidden="true" className="accent-glow text-accent">
             $
           </span>{" "}
           commit-story analyze {slug}
         </p>
-        <Link href="/" className="text-xs text-link hover:underline">
+        <Link
+          href="/"
+          className="shrink-0 text-sm text-link hover:underline"
+        >
           $ cd ..
         </Link>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 min-w-0">
         <Suspense fallback={<BootLines stage="repo" />}>
           <RepoSummary promise={summaryPromise} />
         </Suspense>
       </div>
 
-      <div className="mt-8 border-t border-border pt-6">
+      <div className="mt-8 min-w-0 border-t border-border pt-6">
         <Suspense fallback={<BootLines stage="history" />}>
           <StoryHistory
             promise={historyPromise}
@@ -246,8 +241,8 @@ async function StoryRoute({ params }: StoryPageProps) {
         </Suspense>
       </div>
 
-      <div className="mt-8 border-t border-border pt-6">
-        <p className="mb-3 text-xs tracking-[0.18em] text-muted uppercase">
+      <div className="mt-8 min-w-0 border-t border-border pt-6">
+        <p className="terminal-label mb-3 text-muted uppercase">
           {"// analyze another"}
         </p>
         <StoryPrompt slug={slug} />
@@ -258,7 +253,7 @@ async function StoryRoute({ params }: StoryPageProps) {
 
 export default function StoryPage({ params }: StoryPageProps) {
   return (
-    <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 md:px-8">
       <Suspense fallback={<BootSequence stage="route" />}>
         <StoryRoute params={params} />
       </Suspense>

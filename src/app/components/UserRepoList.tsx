@@ -94,7 +94,6 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
       if (event.key === "k") {
         event.preventDefault();
         step(-1);
-        return;
       }
     }
 
@@ -103,14 +102,14 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
   }, [activeIndex, filtered, router, username]);
 
   return (
-    <div>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-baseline gap-2 text-sm">
-          <label htmlFor="repo-filter" className="whitespace-nowrap text-text">
+    <div className="min-w-0">
+      <div className="mt-6 flex w-full min-w-0 flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-h-11 w-full min-w-0 items-center gap-2 border border-border px-3 sm:w-auto sm:flex-1 sm:border-0 sm:px-0">
+          <label htmlFor="repo-filter" className="shrink-0 whitespace-nowrap text-sm">
             <span aria-hidden="true" className="accent-glow text-accent">
               $
             </span>{" "}
-            grep{" "}
+            grep
           </label>
           <input
             ref={filterRef}
@@ -125,10 +124,9 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
-            className="min-w-0 flex-1 bg-transparent text-text caret-transparent outline-none placeholder:text-muted"
-            style={{ width: `${Math.max(query.length, 9)}ch` }}
+            className="min-h-11 min-w-0 flex-1 bg-transparent text-sm text-text caret-transparent outline-none placeholder:text-muted"
           />
-          <span aria-hidden="true" className="terminal-cursor" />
+          <span aria-hidden="true" className="terminal-cursor shrink-0" />
         </div>
 
         <button
@@ -138,7 +136,7 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
             setSelectedIndex(0);
           }}
           aria-pressed={hideExtras}
-          className="text-xs text-muted transition-colors hover:text-accent"
+          className="flex min-h-11 w-full min-w-0 items-center justify-center border border-border px-4 text-sm text-muted transition-colors hover:text-accent sm:w-auto sm:justify-start sm:border-0 sm:px-0"
         >
           [{hideExtras ? "x" : " "}] hide forks + archived
         </button>
@@ -147,7 +145,7 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
       <p className="mt-8 text-sm text-muted">select a repository to analyze:</p>
 
       {filtered.length === 0 ? (
-        <p className="mt-4 text-sm text-error">
+        <p className="mt-4 break-words text-sm text-error">
           {repos.length === 0
             ? "no public repositories found"
             : "no repositories match the current filters"}
@@ -156,6 +154,7 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
         <div className="mt-3 border-y border-border">
           {filtered.map((repo, index) => {
             const active = index === activeIndex;
+            const metaColor = active ? "text-accent" : "text-muted";
             return (
               <Link
                 key={`${repo.name}-${index}`}
@@ -164,50 +163,55 @@ export function UserRepoList({ username, repos }: UserRepoListProps) {
                 }}
                 href={`/story/${username}/${repo.name}`}
                 aria-current={active ? "page" : undefined}
-                className={`block border-l-2 px-3 py-3 transition-colors ${
+                className={`block min-w-0 border-l-2 px-3 py-3 transition-colors ${
                   active
                     ? "border-accent bg-surface text-accent"
                     : "border-transparent text-text hover:bg-surface"
                 }`}
               >
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+                <div className="flex min-w-0 items-baseline gap-2 text-sm">
                   <span
                     aria-hidden="true"
-                    className={`w-3 ${active ? "text-accent" : "text-transparent"}`}
+                    className={`w-3 shrink-0 ${active ? "text-accent" : "text-transparent"}`}
                   >
                     {">"}
                   </span>
-                  <span className="font-bold">{repo.name}</span>
-                  <span className={active ? "text-accent" : "text-muted"}>
-                    {repo.language ?? "unknown"}
+                  <span className="min-w-0 break-words font-bold">
+                    {repo.name}
                   </span>
-                  <span className="text-warning">
-                    {repo.stargazers_count.toLocaleString()} stars
-                  </span>
-                  <span className={active ? "text-accent" : "text-muted"}>
-                    {repo.pushedLabel}
-                  </span>
-                  {repo.fork ? (
-                    <span className="text-warning">[fork]</span>
-                  ) : null}
-                  {repo.archived ? (
-                    <span className="text-warning">[archived]</span>
-                  ) : null}
                 </div>
                 {repo.description ? (
                   <p
-                    className={`mt-1 truncate pl-6 text-xs ${active ? "text-accent" : "text-muted"}`}
+                    title={repo.description}
+                    className={`mt-1 truncate pl-5 text-sm ${metaColor}`}
                   >
                     {repo.description}
                   </p>
                 ) : null}
+                <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pl-5 text-sm">
+                  <span className={`min-w-0 break-words ${metaColor}`}>
+                    {repo.language ?? "unknown"}
+                  </span>
+                  <span className="shrink-0 text-warning">
+                    {repo.stargazers_count.toLocaleString()} stars
+                  </span>
+                  <span className={`min-w-0 break-words ${metaColor}`}>
+                    {repo.pushedLabel}
+                  </span>
+                  {repo.fork ? (
+                    <span className="shrink-0 text-warning">[fork]</span>
+                  ) : null}
+                  {repo.archived ? (
+                    <span className="shrink-0 text-warning">[archived]</span>
+                  ) : null}
+                </div>
               </Link>
             );
           })}
         </div>
       )}
 
-      <p className="mt-6 text-xs text-muted">
+      <p className="keyboard-hint mt-6 text-sm text-muted">
         [j/k] move · [enter] open · [/] filter · [esc] leave filter
       </p>
     </div>

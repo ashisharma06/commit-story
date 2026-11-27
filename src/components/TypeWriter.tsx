@@ -45,7 +45,7 @@ function renderMarkdown(text: string): ReactNode[] {
     blocks.push(
       <ul
         key={`list-${blocks.length}`}
-        className="ml-4 mt-2 list-disc space-y-1 text-muted marker:text-accent"
+        className="ml-4 mt-2 min-w-0 list-disc space-y-1 break-words text-muted marker:text-accent"
       >
         {listItems}
       </ul>,
@@ -67,7 +67,10 @@ function renderMarkdown(text: string): ReactNode[] {
       flushList();
       const Heading = heading[1].length === 1 ? "h2" : "h3";
       blocks.push(
-        <Heading key={index} className="mt-5 mb-2 text-sm text-accent">
+        <Heading
+          key={index}
+          className="mt-5 mb-2 break-words text-sm text-accent sm:text-base"
+        >
           {renderInline(heading[2])}
         </Heading>,
       );
@@ -82,7 +85,7 @@ function renderMarkdown(text: string): ReactNode[] {
 
     flushList();
     blocks.push(
-      <p key={index} className="my-2 text-sm leading-7 text-text">
+      <p key={index} className="my-2 break-words text-sm leading-relaxed text-text">
         {renderInline(trimmed)}
       </p>,
     );
@@ -123,7 +126,11 @@ export function TypeWriter({
   const typing = !reducedMotion && visibleCount < text.length;
 
   return (
-    <div aria-live="polite" aria-busy={typing}>
+    <div
+      aria-live="polite"
+      aria-busy={typing}
+      className="min-w-0 break-words"
+    >
       {renderMarkdown(visible)}
       {typing ? <span aria-hidden="true" className="terminal-cursor" /> : null}
     </div>

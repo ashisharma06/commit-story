@@ -12,16 +12,25 @@ export function TerminalWindow({
   className = "",
 }: TerminalWindowProps) {
   return (
-    <section className={`border border-border bg-surface ${className}`.trim()}>
-      <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
-        <div className="flex items-center gap-1.5" aria-hidden="true">
-          <span className="h-2 w-2 bg-muted" />
-          <span className="h-2 w-2 bg-muted" />
-          <span className="h-2 w-2 bg-muted" />
+    <section
+      className={`w-full min-w-0 border border-border bg-surface ${className}`.trim()}
+    >
+      <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+        <div className="flex shrink-0 items-center gap-1" aria-hidden="true">
+          <span className="h-1.5 w-1.5 bg-muted sm:h-2 sm:w-2" />
+          <span className="h-1.5 w-1.5 bg-muted sm:h-2 sm:w-2" />
+          <span className="h-1.5 w-1.5 bg-muted sm:h-2 sm:w-2" />
         </div>
-        <span className="truncate text-xs text-muted">{title}</span>
+        <span
+          title={title}
+          className="min-w-0 flex-1 truncate text-[11px] text-muted sm:text-xs"
+        >
+          {title}
+        </span>
       </div>
-      <div className="px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+      <div className="min-w-0 px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8">
+        {children}
+      </div>
     </section>
   );
 }

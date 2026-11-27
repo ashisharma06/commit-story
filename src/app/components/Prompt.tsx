@@ -23,18 +23,18 @@ export function Prompt({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
+    <form onSubmit={handleSubmit} className="w-full min-w-0">
       <label htmlFor="repo-input" className="sr-only">
         GitHub username or owner/repo
       </label>
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-3 text-sm sm:text-base">
-        <span className="whitespace-nowrap text-text">
+      <div className="flex min-h-11 w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-2 text-sm sm:text-base">
+        <span className="shrink-0 whitespace-nowrap text-text">
           <span aria-hidden="true" className="accent-glow text-accent">
             $
           </span>{" "}
           commit-story analyze
         </span>
-        <div className="flex min-w-0 flex-1 items-baseline">
+        <div className="flex w-full min-w-0 items-center sm:w-auto sm:flex-1">
           <input
             ref={inputRef}
             id="repo-input"
@@ -47,15 +47,18 @@ export function Prompt({
             placeholder="username or owner/repo"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "repo-error" : undefined}
-            className="min-w-0 max-w-full bg-transparent text-text caret-transparent outline-none placeholder:text-muted"
-            style={{ width: `${Math.max(value.length, 1)}ch`, minWidth: "1ch" }}
+            className="min-h-11 w-full min-w-0 bg-transparent text-text caret-transparent outline-none placeholder:text-muted"
           />
-          <span aria-hidden="true" className="terminal-cursor ml-0.5" />
+          <span aria-hidden="true" className="terminal-cursor ml-0.5 shrink-0" />
         </div>
       </div>
       <p className="sr-only">Press Enter to analyze the repository.</p>
       {error ? (
-        <p id="repo-error" role="alert" className="mt-4 text-sm text-error">
+        <p
+          id="repo-error"
+          role="alert"
+          className="mt-4 break-words text-sm text-error"
+        >
           error: {error}
         </p>
       ) : null}

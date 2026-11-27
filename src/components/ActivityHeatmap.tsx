@@ -92,10 +92,8 @@ export function ActivityHeatmap({
 }) {
   if (days.length === 0 || !lastActivityAt) {
     return (
-      <div>
-        <p className="mb-4 text-xs tracking-[0.18em] text-muted uppercase">
-          {"// activity"}
-        </p>
+      <div className="min-w-0">
+        <p className="terminal-label mb-4 text-muted uppercase">{"// activity"}</p>
         <p className="text-sm text-muted">no commits to plot yet</p>
       </div>
     );
@@ -103,26 +101,30 @@ export function ActivityHeatmap({
 
   const grid = buildHeatmap(days, lastActivityAt);
   const labels = monthLabels(grid);
+  const gridColumns = `repeat(${grid.length}, 12px)`;
 
   return (
-    <div>
-      <p className="mb-4 text-xs tracking-[0.18em] text-muted uppercase">
-        {"// activity"}
-      </p>
-      <div className="overflow-x-auto pb-2">
-        <div className="min-w-[430px]">
+    <div className="min-w-0">
+      <p className="terminal-label mb-4 text-muted uppercase">{"// activity"}</p>
+      <div className="scroll-fade overflow-x-auto pb-2">
+        <div className="w-max min-w-full">
           <div
-            className="grid gap-[3px] text-[9px] leading-4 text-muted"
-            style={{ gridTemplateColumns: `repeat(${grid.length}, 1fr)` }}
+            className="grid gap-[3px] text-[11px] leading-[1.4] text-muted"
+            style={{ gridTemplateColumns: gridColumns }}
             aria-hidden="true"
           >
             {labels.map((label, index) => (
-              <span key={`${label}-${index}`}>{label}</span>
+              <span
+                key={`${label}-${index}`}
+                className="w-max overflow-visible whitespace-nowrap"
+              >
+                {label}
+              </span>
             ))}
           </div>
           <div
             className="mt-1 grid grid-flow-col grid-rows-7 gap-[3px]"
-            style={{ gridTemplateColumns: `repeat(${grid.length}, 12px)` }}
+            style={{ gridTemplateColumns: gridColumns }}
             role="img"
             aria-label={`Commit activity across ${grid.length} weeks`}
           >
@@ -139,13 +141,13 @@ export function ActivityHeatmap({
           </div>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-muted">
+      <div className="mt-3 flex items-center gap-2 text-[11px] text-muted sm:text-xs">
         <span>less</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <span
             key={level}
             aria-hidden="true"
-            className="h-2.5 w-2.5 border border-border"
+            className="h-2.5 w-2.5 shrink-0 border border-border"
             style={{ backgroundColor: cellColor(level) }}
           />
         ))}

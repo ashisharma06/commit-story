@@ -29,14 +29,18 @@
   html {
     color-scheme: dark;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+    font-variant-ligatures: none;
     background-color: var(--background);
   }
 
   body {
-    min-height: 100%;
+    min-height: 100dvh;
     background-color: var(--background);
     color: var(--text);
     font-family: inherit;
+    font-variant-ligatures: none;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
   }
 
   ::selection {
@@ -53,7 +57,7 @@
     content: "";
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 0;
     pointer-events: none;
     opacity: 0.03;
     background-image: repeating-linear-gradient(
@@ -63,6 +67,74 @@
       transparent 1px,
       transparent 4px
     );
+  }
+}
+
+/* Unlayered so it wins over Tailwind's utility layer. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+body,
+p,
+li,
+dd,
+dt,
+a,
+label,
+strong {
+  line-height: 1.6;
+}
+
+.terminal-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .terminal-label {
+    letter-spacing: 0.18em;
+  }
+}
+
+.keyboard-hint {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .keyboard-hint {
+    display: block;
+  }
+}
+
+.scroll-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+}
+
+@media (min-width: 640px) {
+  .scroll-fade {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 

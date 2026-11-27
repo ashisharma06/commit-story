@@ -39,7 +39,7 @@ export function RepoPrompt() {
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <Prompt
         value={value}
         onChange={(nextValue: string) => {
@@ -51,19 +51,19 @@ export function RepoPrompt() {
         inputRef={inputRef}
       />
 
-      <div className="mt-10 border-t border-border pt-6">
-        <p className="mb-3 text-xs tracking-[0.18em] text-muted uppercase">
+      <div className="mt-8 border-t border-border pt-6 sm:mt-10">
+        <p className="terminal-label mb-3 text-muted uppercase">
           {"// try an example"}
         </p>
-        <ul className="space-y-2 text-sm">
+        <ul className="space-y-1 text-sm">
           {EXAMPLES.map((example) => (
-            <li key={example}>
+            <li key={example} className="min-w-0">
               <button
                 type="button"
                 onClick={() => chooseExample(example)}
-                className="block w-full text-left text-muted transition-colors hover:text-link"
+                className="flex min-h-11 w-full min-w-0 items-center break-words text-left text-muted transition-colors hover:text-link"
               >
-                <span aria-hidden="true" className="text-accent">
+                <span aria-hidden="true" className="shrink-0 text-accent">
                   $
                 </span>{" "}
                 commit-story analyze {example}

@@ -15,7 +15,7 @@ export function BootLines({ stage }: { stage: BootStage }) {
   );
 
   return (
-    <ol aria-live="polite" className="space-y-1 text-sm">
+    <ol aria-live="polite" className="min-w-0 space-y-1 text-sm">
       {STEPS.map((step, index) => {
         const state =
           index < current ? "done" : index === current ? "running" : "queued";
@@ -27,7 +27,7 @@ export function BootLines({ stage }: { stage: BootStage }) {
               : "text-muted";
 
         return (
-          <li key={step.key} className={color}>
+          <li key={step.key} className={`break-words ${color}`}>
             [{state === "done" ? "x" : state === "running" ? "…" : " "}]{" "}
             {step.label}
             {state === "done" ? "..." : null}

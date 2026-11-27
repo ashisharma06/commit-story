@@ -102,36 +102,44 @@ export function StoryKeyboard({
       {children}
       {showHelp ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/95 p-4"
           onMouseDown={() => setShowHelp(false)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Keyboard shortcuts"
-            className="w-full max-w-md border border-border bg-surface p-6"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md min-w-0 overflow-y-auto border border-border bg-surface p-4 sm:p-6"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <p className="text-sm text-accent">$ commit-story --help</p>
+            <p className="break-words text-sm text-accent">
+              $ commit-story --help
+            </p>
             <dl className="mt-6 space-y-2 text-sm">
-              <div className="flex justify-between gap-6">
-                <dt className="text-muted">next chapter</dt>
-                <dd className="text-text">j / ↓</dd>
+              <div className="flex min-w-0 justify-between gap-4 sm:gap-6">
+                <dt className="min-w-0 break-words text-muted">next chapter</dt>
+                <dd className="shrink-0 text-text">j / ↓</dd>
               </div>
-              <div className="flex justify-between gap-6">
-                <dt className="text-muted">previous chapter</dt>
-                <dd className="text-text">k / ↑</dd>
+              <div className="flex min-w-0 justify-between gap-4 sm:gap-6">
+                <dt className="min-w-0 break-words text-muted">
+                  previous chapter
+                </dt>
+                <dd className="shrink-0 text-text">k / ↑</dd>
               </div>
-              <div className="flex justify-between gap-6">
-                <dt className="text-muted">focus prompt</dt>
-                <dd className="text-text">/</dd>
+              <div className="flex min-w-0 justify-between gap-4 sm:gap-6">
+                <dt className="min-w-0 break-words text-muted">focus prompt</dt>
+                <dd className="shrink-0 text-text">/</dd>
               </div>
-              <div className="flex justify-between gap-6">
-                <dt className="text-muted">close / leave input</dt>
-                <dd className="text-text">esc</dd>
+              <div className="flex min-w-0 justify-between gap-4 sm:gap-6">
+                <dt className="min-w-0 break-words text-muted">
+                  close / leave input
+                </dt>
+                <dd className="shrink-0 text-text">esc</dd>
               </div>
             </dl>
-            <p className="mt-6 text-xs text-muted">press ? or esc to close</p>
+            <p className="mt-6 break-words text-sm text-muted">
+              press ? or esc to close
+            </p>
           </div>
         </div>
       ) : null}

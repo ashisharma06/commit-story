@@ -1,3 +1,7 @@
+"use client";
+
+import { useMediaQuery } from "@/components/useMediaQuery";
+
 export function asciiBar(
   value: number,
   max: number,
@@ -16,15 +20,6 @@ export function asciiBar(
   return "█".repeat(filled) + "░".repeat(Math.floor(width) - filled);
 }
 
-type AsciiBarProps = {
-  label: string;
-  value: number;
-  max: number;
-  width?: number;
-  detail?: string;
-  percent?: number;
-};
-
 export function AsciiBar({
   label,
   value,
@@ -32,7 +27,16 @@ export function AsciiBar({
   width = 12,
   detail,
   percent,
-}: AsciiBarProps) {
+}: {
+  label: string;
+  value: number;
+  max: number;
+  width?: number;
+  detail?: string;
+  percent?: number;
+}) {
+  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const barWidth = isDesktop ? width : Math.min(7, width);
   const scaledPercent =
     Number.isFinite(value) && Number.isFinite(max) && max > 0
       ? Math.round((value / max) * 100)
@@ -40,13 +44,16 @@ export function AsciiBar({
   const shownPercent = percent ?? scaledPercent;
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 text-xs sm:grid-cols-[minmax(9rem,1fr)_auto_4rem]">
-      <span className="truncate text-text">{label}</span>
-      <span aria-hidden="true" className="whitespace-nowrap text-accent">
-        {asciiBar(value, max, width)}
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(9rem,1fr)_auto_4rem] sm:gap-x-4">
+      <span title={label} className="min-w-0 break-words text-text">
+        {label}
       </span>
-      <span className="text-right text-muted">{detail ?? `${shownPercent}%`}</span>
-      <span className="sr-only">{shownPercent}%</span>
+      <span aria-hidden="true" className="whitespace-nowrap text-accent">
+        {asciiBar(value, max, barWidth)}
+      </span>
+      <span className="col-span-2 min-w-0 break-words text-sm text-muted sm:col-span-1 sm:text-right">
+        {detail ?? `${shownPercent}%`}
+      </span>
     </div>
   );
 }

@@ -22,17 +22,20 @@ function ChapterOutput({
   milestones: readonly MilestoneCommit[];
 }) {
   if (milestones.length === 0) {
-    return <p className="text-xs text-muted">no commits recorded</p>;
+    return <p className="text-sm text-muted">no commits recorded</p>;
   }
 
   return (
-    <ul className="space-y-1 text-xs leading-6">
+    <ul className="min-w-0 space-y-1 text-sm leading-relaxed">
       {milestones.map((commit) => (
-        <li key={commit.sha} className="flex gap-3">
+        <li key={commit.sha} className="flex min-w-0 gap-3">
           <span className="shrink-0 text-warning">
             {commit.sha.slice(0, 7)}
           </span>
-          <span className="min-w-0 flex-1 truncate text-text">
+          <span
+            title={commit.message}
+            className="min-w-0 flex-1 truncate text-text"
+          >
             {commit.message}
           </span>
         </li>
@@ -47,16 +50,16 @@ export function StoryVisuals({ insights }: { insights: RepoInsights }) {
 
   return (
     <StoryKeyboard chapterCount={insights.eras.length}>
-      <div className="space-y-10">
-        <div className="space-y-8">
+      <div className="min-w-0 space-y-10">
+        <div className="min-w-0 space-y-8">
           <ActivityHeatmap
             days={insights.activityByDay}
             lastActivityAt={insights.lastCommitAt}
           />
           <CommitsOverTime weeks={insights.commitsPerWeek} />
 
-          <div>
-            <p className="mb-4 text-xs tracking-[0.18em] text-muted uppercase">
+          <div className="min-w-0">
+            <p className="terminal-label mb-4 text-muted uppercase">
               {"// contributor leaderboard"}
             </p>
             {leaderboard.length === 0 ? (
@@ -78,40 +81,42 @@ export function StoryVisuals({ insights }: { insights: RepoInsights }) {
             )}
           </div>
 
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
-            <div>
-              <dt className="text-xs text-muted">busiest day</dt>
-              <dd className="mt-1 text-accent">
+          <dl className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-4 text-sm md:grid-cols-4">
+            <div className="min-w-0">
+              <dt className="terminal-label text-muted uppercase">busiest day</dt>
+              <dd className="mt-1 break-words text-accent">
                 {insights.busiestDayOfWeek?.label ?? "n/a"}
               </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted">busiest hour</dt>
-              <dd className="mt-1 text-accent">
+            <div className="min-w-0">
+              <dt className="terminal-label text-muted uppercase">busiest hour</dt>
+              <dd className="mt-1 break-words text-accent">
                 {insights.busiestHour?.label ?? "n/a"}
               </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted">longest streak</dt>
-              <dd className="mt-1 text-accent">
+            <div className="min-w-0">
+              <dt className="terminal-label text-muted uppercase">
+                longest streak
+              </dt>
+              <dd className="mt-1 break-words text-accent">
                 {insights.longestCommitStreakDays === null
                   ? "n/a"
                   : `${insights.longestCommitStreakDays} days`}
               </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted">milestones</dt>
-              <dd className="mt-1 text-accent">{insights.milestones.length}</dd>
+            <div className="min-w-0">
+              <dt className="terminal-label text-muted uppercase">milestones</dt>
+              <dd className="mt-1 break-words text-accent">
+                {insights.milestones.length}
+              </dd>
             </div>
           </dl>
         </div>
 
         <GitGraph commits={insights.milestones} />
 
-        <div className="space-y-8">
-          <p className="text-xs tracking-[0.18em] text-muted uppercase">
-            {"// chapters"}
-          </p>
+        <div className="min-w-0 space-y-8">
+          <p className="terminal-label text-muted uppercase">{"// chapters"}</p>
           {insights.eras.map((era, index) => (
             <Chapter key={era.index} era={era} index={index + 1}>
               <ChapterOutput

@@ -83,16 +83,16 @@ function NarrativeRun({
     status === "loading" || (status === "streaming" && text.length === 0);
 
   return (
-    <>
+    <div className="min-w-0">
       {waiting ? (
-        <p aria-live="polite" className="mt-6 text-sm text-warning">
+        <p aria-live="polite" className="mt-6 break-words text-sm text-warning">
           generating story...
           <span aria-hidden="true" className="terminal-cursor" />
         </p>
       ) : null}
 
       {text.length > 0 ? (
-        <div className="mt-6">
+        <div className="mt-6 min-w-0">
           <TypeWriter text={text} />
         </div>
       ) : null}
@@ -102,18 +102,18 @@ function NarrativeRun({
       ) : null}
 
       {status === "error" ? (
-        <div className="mt-6" role="alert">
-          <p className="text-sm text-error">error: {error}</p>
+        <div className="mt-6 min-w-0" role="alert">
+          <p className="break-words text-sm text-error">error: {error}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-3 text-sm text-link hover:underline"
+            className="mt-3 flex min-h-11 items-center text-sm text-link hover:underline"
           >
             $ retry
           </button>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -121,8 +121,8 @@ export function StoryNarrative({ owner, repo }: StoryNarrativeProps) {
   const [attempt, setAttempt] = useState(0);
 
   return (
-    <section aria-label={`AI narrative for ${owner}/${repo}`}>
-      <p className="text-sm">
+    <section aria-label={`AI narrative for ${owner}/${repo}`} className="min-w-0">
+      <p className="break-words text-sm">
         <span aria-hidden="true" className="accent-glow text-accent">
           $
         </span>{" "}

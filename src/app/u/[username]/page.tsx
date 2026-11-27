@@ -29,18 +29,20 @@ function UserError({
   hint?: string;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col justify-center px-4 py-16 sm:px-6">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-10 sm:px-6 sm:py-16 md:px-8">
       <TerminalWindow title="commit-story ~ error">
-        <p className="text-sm">
+        <p className="break-words text-sm">
           <span aria-hidden="true" className="accent-glow text-accent">
             $
           </span>{" "}
           {command}
         </p>
-        <p role="alert" className="mt-6 text-sm text-error">
+        <p role="alert" className="mt-6 break-words text-sm text-error">
           error: {message}
         </p>
-        {hint ? <p className="mt-3 text-sm text-muted">{hint}</p> : null}
+        {hint ? (
+          <p className="mt-3 break-words text-sm text-muted">{hint}</p>
+        ) : null}
         <Link
           href="/"
           className="mt-8 inline-block text-sm text-link hover:underline"
@@ -103,27 +105,27 @@ export default async function UserPage({ params }: UserPageProps) {
   }));
 
   return (
-    <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 md:px-8">
       <TerminalWindow title={`commit-story ~ ${parsed.username}`}>
-        <p className="text-sm">
+        <p className="break-words text-sm">
           <span aria-hidden="true" className="accent-glow text-accent">
             $
           </span>{" "}
           {command}
         </p>
 
-        <p className="mt-6 text-xs text-muted">
+        <p className="terminal-label mt-6 break-words text-muted">
           {"// "}
           {profile.name ?? profile.login} · {profile.public_repos} public repos
         </p>
         {profile.bio ? (
-          <p className="mt-2 text-sm text-muted">{profile.bio}</p>
+          <p className="mt-2 break-words text-sm text-muted">{profile.bio}</p>
         ) : null}
 
         <UserRepoList username={parsed.username} repos={rows} />
       </TerminalWindow>
 
-      <p className="mt-6 text-xs leading-6 text-muted">
+      <p className="mt-6 text-sm leading-relaxed break-words text-muted">
         select a repo to build its commit story ·{" "}
         <Link href="/" className="text-link hover:underline">
           $ cd ..
