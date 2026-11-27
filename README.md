@@ -12,15 +12,6 @@ Commit Story turns any public GitHub user's repository history into a terminal-s
 <p>
  ## Repository Page
  <img width="1076" height="907" alt="image" src="https://github.com/user-attachments/assets/c8ab2009-de4f-4fb0-a123-ccddf1662972" />
-
- ## Features Pages
- <img width="1035" height="911" alt="image" src="https://github.com/user-attachments/assets/8947c893-682d-47fa-9f5a-75bd067ca6a5" />
- <img width="1132" height="889" alt="image" src="https://github.com/user-attachments/assets/494dc96b-7b96-4fda-9b3d-10165097e86a" />
- <img width="1003" height="346" alt="image" src="https://github.com/user-attachments/assets/77035d55-56a6-4613-9fa6-5d0c934252cb" />
-
- 
-
-
 </p>
 
 ---
