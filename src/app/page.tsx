@@ -1,5 +1,4 @@
 import { RepoPrompt } from "@/app/components/RepoPrompt";
-import { TerminalWindow } from "@/app/components/TerminalWindow";
 
 export default function Home() {
   return (
@@ -21,9 +20,7 @@ export default function Home() {
         </p>
       </div>
 
-      <TerminalWindow title="commit-story ~ /">
-        <RepoPrompt />
-      </TerminalWindow>
+      <RepoPrompt />
 
       <p className="mt-6 text-sm leading-relaxed break-words text-muted">
         public repositories only · username or owner/repo · GitHub URLs and
