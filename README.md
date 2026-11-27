@@ -6,9 +6,9 @@ Commit Story turns any public GitHub user's repository history into a terminal-s
 
 **Live demo:** [[your-app.vercel.app](https://your-app.vercel.app)](https://commit-story-mu.vercel.app/)
 
-[![Commit Story](https://your-app.vercel.app/badge/ashisharma06/commit-story)](https://your-app.vercel.app/story/ashisharma06/commit-story)
+[![Commit Story] (https://your-app.vercel.app/story/ashisharma06/commit-story)
 
-![Landing page](./docs/landing.png)
+<img width="1144" height="870" alt="image" src="https://github.com/user-attachments/assets/b81f9b4c-9f26-42eb-b114-b0a2e60ad0e4" />
 
 <p>
   <img src="./docs/picker.png" alt="Repository picker" width="49%" />
