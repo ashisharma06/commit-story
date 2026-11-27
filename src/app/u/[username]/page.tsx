@@ -1,4 +1,6 @@
+import { cache } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { TerminalWindow } from "@/app/components/TerminalWindow";
 import { UserRepoList, type UserRepoRow } from "@/app/components/UserRepoList";
@@ -7,13 +9,48 @@ import {
   UserNotFoundError,
   type UserReposData,
 } from "@/lib/github";
+import { socialMetadata } from "@/lib/metadata";
 import { parseRepoInput } from "@/lib/repo";
+import { formatCount } from "@/lib/stats";
 import { loadCachedUserRepos } from "@/lib/story";
 import { relativeTime } from "@/lib/time";
 
 type UserPageProps = {
   params: Promise<{ username: string }>;
 };
+
+/** Shared between the page and metadata so one request fetches the user once. */
+const loadUserRepos = cache(loadCachedUserRepos);
+
+export async function generateMetadata({
+  params,
+}: UserPageProps): Promise<Metadata> {
+  await connection();
+  const { username } = await params;
+  const title = `${username} on GitHub · Commit Story`;
+  const path = `/u/${username}`;
+  const parsed = parseRepoInput(username);
+  let description = `Browse ${username}'s public GitHub repositories and open a commit story.`;
+
+  if (!("error" in parsed) && parsed.kind === "user") {
+    try {
+      const data = await loadUserRepos(parsed.username);
+      description = `${formatCount(data.profile.public_repos)} public repos by ${
+        data.profile.name ?? data.profile.login
+      } on GitHub.`;
+    } catch {
+      // Keep the generic description when GitHub cannot be reached.
+    }
+  }
+
+  return socialMetadata({
+    title,
+    description,
+    path,
+    imagePath: `${path}/opengraph-image`,
+    imageAlt: title,
+  });
+}
 
 type LoadResult =
   | { ok: true; data: UserReposData }
@@ -56,7 +93,7 @@ function UserError({
 
 async function loadUser(username: string): Promise<LoadResult> {
   try {
-    const data = await loadCachedUserRepos(username);
+    const data = await loadUserRepos(username);
     return { ok: true, data };
   } catch (error) {
     if (error instanceof UserNotFoundError) {

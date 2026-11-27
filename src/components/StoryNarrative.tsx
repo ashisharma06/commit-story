@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { StoryShare } from "@/components/StoryShare";
 import { TypeWriter } from "@/components/TypeWriter";
+import type { StoryMarkdownData } from "@/lib/storyMarkdown";
 import { relativeTime } from "@/lib/time";
 
 type StoryNarrativeProps = {
   owner: string;
   repo: string;
   cachedAt: string | null;
+  share: StoryMarkdownData;
 };
 
 type StoryStatus = "loading" | "streaming" | "done" | "error";
@@ -22,11 +25,15 @@ function NarrativeRun({
   owner,
   repo,
   refresh,
+  share,
   onRetry,
   onCachedAt,
   onBusyChange,
-}: Omit<StoryNarrativeProps, "cachedAt"> & {
+}: {
+  owner: string;
+  repo: string;
   refresh: boolean;
+  share: StoryMarkdownData;
   onRetry: () => void;
   onCachedAt: (value: string) => void;
   onBusyChange: (value: boolean) => void;
@@ -130,11 +137,18 @@ function NarrativeRun({
           </button>
         </div>
       ) : null}
+
+      <StoryShare narrative={text} data={share} />
     </div>
   );
 }
 
-export function StoryNarrative({ owner, repo, cachedAt }: StoryNarrativeProps) {
+export function StoryNarrative({
+  owner,
+  repo,
+  cachedAt,
+  share,
+}: StoryNarrativeProps) {
   const [run, setRun] = useState({ attempt: 0, refresh: false });
   const [lastUpdated, setLastUpdated] = useState<string | null>(cachedAt);
   const [busy, setBusy] = useState(true);
@@ -163,6 +177,7 @@ export function StoryNarrative({ owner, repo, cachedAt }: StoryNarrativeProps) {
         owner={owner}
         repo={repo}
         refresh={run.refresh}
+        share={share}
         onRetry={() => start(false)}
         onCachedAt={handleCachedAt}
         onBusyChange={handleBusyChange}

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -8,9 +9,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Commit Story — your repo, told as a story",
-  description:
-    "Turn any public GitHub repository's history into a readable, terminal-style narrative.",
+  metadataBase: new URL(siteUrl()),
 };
 
 export const viewport: Viewport = {

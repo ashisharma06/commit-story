@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
 import { RepoPrompt } from "@/app/components/RepoPrompt";
+import { socialMetadata } from "@/lib/metadata";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return socialMetadata({
+    title: "Commit Story — your repo, told as a story",
+    description:
+      "Turn any public GitHub repository's history into a readable, terminal-style narrative.",
+    path: "/",
+    imagePath: "/opengraph-image",
+    imageAlt: "Commit Story — your repo, told as a story",
+  });
+}
 
 export default function Home() {
   return (

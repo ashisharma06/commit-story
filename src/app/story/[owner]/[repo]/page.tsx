@@ -1,5 +1,6 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { TerminalWindow } from "@/app/components/TerminalWindow";
 import { AsciiBar } from "@/components/AsciiBar";
@@ -9,7 +10,16 @@ import { StoryPrompt } from "@/components/StoryPrompt";
 import { StoryVisuals } from "@/components/StoryVisuals";
 import { analyzeRepo } from "@/lib/analyze";
 import type { RepoStoryData } from "@/lib/github";
+import { socialMetadata } from "@/lib/metadata";
 import { parseRepoInput } from "@/lib/repo";
+import { siteUrl } from "@/lib/site";
+import {
+  activeYears,
+  repoStatsDescription,
+  topLanguageLabel,
+  yearsLabel,
+} from "@/lib/stats";
+import type { StoryMarkdownData } from "@/lib/storyMarkdown";
 import {
   describeStoryError,
   loadNarrativeCachedAt,
@@ -25,6 +35,40 @@ type StoryPageProps = {
 type Settled<T> =
   | { ok: true; value: T }
   | { ok: false; error: StoryLoadError };
+
+/** Shared between the page and metadata so one request fetches the repo once. */
+const loadStory = cache(loadRepoStoryData);
+
+export async function generateMetadata({
+  params,
+}: StoryPageProps): Promise<Metadata> {
+  await connection();
+  const { owner, repo } = await params;
+  const slug = `${owner}/${repo}`;
+  const title = `${slug}: the story of a codebase`;
+  const path = `/story/${owner}/${repo}`;
+  const parsed = parseRepoInput(slug);
+  let description = `The story of ${slug}, told from its real GitHub history.`;
+
+  if (!("error" in parsed) && parsed.kind === "repo") {
+    try {
+      const data = await loadStory(parsed.owner, parsed.repo);
+      description = repoStatsDescription(
+        analyzeRepo(data.commits, data.pullRequests),
+      );
+    } catch {
+      // Keep the generic description when GitHub cannot be reached.
+    }
+  }
+
+  return socialMetadata({
+    title,
+    description,
+    path,
+    imagePath: `${path}/opengraph-image`,
+    imageAlt: title,
+  });
+}
 
 async function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
   try {
@@ -176,22 +220,40 @@ async function StoryHistory({
     return <SectionError label="// history" error={result.error} />;
   }
 
+  const insights = analyzeRepo(result.value.commits, result.value.pullRequests);
   const narrativeCachedAt = await loadNarrativeCachedAt(
     owner,
     repo,
     result.value.headSha,
   ).catch(() => null);
 
+  const share: StoryMarkdownData = {
+    owner,
+    repo,
+    siteUrl: siteUrl(),
+    title: `${owner}/${repo}: the story of a codebase`,
+    description: repoStatsDescription(insights),
+    totalCommits: insights.totalCommits,
+    totalContributors: insights.totalContributors,
+    totalPullRequests: insights.totalPullRequests,
+    yearsActive: yearsLabel(
+      activeYears(insights.firstCommitAt, insights.lastCommitAt),
+    ),
+    topLanguage: topLanguageLabel(result.value.languages),
+    firstCommitAt: insights.firstCommitAt,
+    lastCommitAt: insights.lastCommitAt,
+    languages: result.value.languages.slice(0, 8),
+  };
+
   return (
     <>
-      <StoryVisuals
-        insights={analyzeRepo(result.value.commits, result.value.pullRequests)}
-      />
+      <StoryVisuals insights={insights} />
       <div className="mt-10 min-w-0 border-t border-border pt-6">
         <StoryNarrative
           owner={owner}
           repo={repo}
           cachedAt={narrativeCachedAt}
+          share={share}
         />
       </div>
     </>
@@ -215,7 +277,7 @@ async function StoryRoute({ params }: StoryPageProps) {
     );
   }
 
-  const storyPromise = loadRepoStoryData(parsed.owner, parsed.repo);
+  const storyPromise = loadStory(parsed.owner, parsed.repo);
 
   return (
     <TerminalWindow title={`commit-story ~ ${slug}`}>
