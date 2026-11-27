@@ -4,7 +4,7 @@
 
 Commit Story turns any public GitHub user's repository history into a terminal-style visual timeline and an AI-written narrative. Enter a username, pick a repo, and read its history as chapters: commits, contributors, eras, and the people behind the code.
 
-**Live demo:** [your-app.vercel.app](https://your-app.vercel.app)
+**Live demo:** [[your-app.vercel.app](https://your-app.vercel.app)](https://commit-story-mu.vercel.app/)
 
 [![Commit Story](https://your-app.vercel.app/badge/ashisharma06/commit-story)](https://your-app.vercel.app/story/ashisharma06/commit-story)
 
